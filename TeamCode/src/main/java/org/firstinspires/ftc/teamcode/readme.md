@@ -1,10 +1,20 @@
-## TeamCode Module
+## TeamCode Module - FTC Team 18650 The Cookie Clickers
 
-Welcome!
+This module contains Team 18650's robot code, originally developed for INTO THE DEEP 2024-2025 and ported forward for continued development.
 
-This module, TeamCode, is the place where you will write/paste the code for your team's
-robot controller App. This module is currently empty (a clean slate) but the
-process for adding OpModes is straightforward.
+### Our Code Structure
+
+```
+teamcode/
+├── core/              # Core OpMode infrastructure
+├── components/        # Robot subsystems (arm, drive, grip, etc.)
+├── hardware/          # Hardware abstraction layer
+├── vision/            # Vision processing
+├── drive/             # RoadRunner autonomous navigation
+└── utilities/         # Helper classes and utilities
+```
+
+For general FTC SDK OpMode examples and instructions, see the sections below.
 
 ## Creating your own OpModes
 
