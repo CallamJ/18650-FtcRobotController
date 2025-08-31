@@ -11,7 +11,6 @@ import org.firstinspires.ftc.teamcode.components.TelescopingArm;
 import org.firstinspires.ftc.teamcode.components.TiltBase;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
-import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 
 import java.util.List;
 
@@ -54,7 +53,7 @@ public abstract class OpModeCore extends BasicOpModeCore {
 				Hardware.getMotor("tiltMotorLeft"),
 				Hardware.getMotor("tiltMotorRight", true),
 				Hardware.getTouchSensor("tiltLimitSensor"),
-				Hardware.getPotentiometer("tiltPotentiometer", 270, 3.33)
+				Hardware.getPotentiometer("tiltPotentiometer", 270, 3.33, -70)
 		);
 
 

@@ -178,7 +178,7 @@ public class Hardware {
         return potentiometer;
     }
 
-    public static SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage, DataFilter filter){
+    public static SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage, double offset){
         assertInitialized();
 
         Optional<SmartPotentiometer> potentiometerOptional = getDevice(SmartPotentiometer.class, name);
@@ -189,7 +189,7 @@ public class Hardware {
         }
 
         SmartAnalogInput input = getAnalogInput(name);
-        SmartPotentiometer potentiometer = new SmartPotentiometer(input, name, maxAngle, maxVoltage);
+        SmartPotentiometer potentiometer = new SmartPotentiometer(input, name, maxAngle, maxVoltage, offset);
         potentiometers.add(potentiometer);
         devices.add(potentiometer);
         caches.add(potentiometer);
