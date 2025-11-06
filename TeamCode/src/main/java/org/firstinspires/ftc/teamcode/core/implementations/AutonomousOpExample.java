@@ -17,4 +17,9 @@ public class AutonomousOpExample extends AutonomousCore {
     protected Pose createStartPose() {
         return new Pose(0, 0, 0);
     }
+
+    @Override
+    protected void configureTelemetry() {
+
+    }
 }

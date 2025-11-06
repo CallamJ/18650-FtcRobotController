@@ -10,7 +10,6 @@ public abstract class TeleOpCore extends OpModeCore {
     @Override
     protected void initialize(){
         super.initialize();
-        driveBase.reverseEncoders();
         //save the current gamepad states to compare against to avoid errors
         previousGamepad1.copy(gamepad1);
         previousGamepad2.copy(gamepad2);
