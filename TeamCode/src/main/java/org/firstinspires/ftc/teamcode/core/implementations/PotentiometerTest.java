@@ -3,12 +3,12 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 
-import org.firstinspires.ftc.teamcode.core.BasicTeleOpCore;
+import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 
 @TeleOp(name = "PotentiometerTestA")
-public class PotentiometerTest extends BasicTeleOpCore {
+public class PotentiometerTest extends TeleOpCore {
 	SmartPotentiometer potentiometer;
 
 	@Override

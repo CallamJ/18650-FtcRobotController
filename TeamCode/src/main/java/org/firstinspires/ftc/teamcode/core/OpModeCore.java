@@ -1,33 +1,48 @@
 package org.firstinspires.ftc.teamcode.core;
 
-import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.robotcore.util.ElapsedTime;
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import org.firstinspires.ftc.teamcode.hardware.Hardware;
+import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
+import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
 
-import java.util.List;
+/**
+ * The most core features of any OpMode without any robot-specific code, usable on any control hub to provide a framework with all the custom components initialized properly.
+ */
+public abstract class OpModeCore extends LinearOpMode {
+	private static OpModeCore instance;
+	protected PrettyTelemetry prettyTelem;
 
-@Config
-public abstract class OpModeCore extends BasicOpModeCore {
-
-	//<editor-fold desc="Fields">
-	//components
-	protected List<LynxModule> lynxModules;
-	protected ElapsedTime tickTimer;
-	//</editor-fold>
-
-	@Override
-	protected void initialize(){
-		super.initialize();
-
-		tickTimer = new ElapsedTime();
-
-		// always configure telemetry last
-		configureTelemetry();
+	public static OpModeCore getInstance(){
+		return instance;
 	}
 
-    abstract protected void configureTelemetry();
+	public static PrettyTelemetry getTelemetry(){
+		return instance.prettyTelem;
+	}
+
+	@Override
+	public void runOpMode(){
+		instance = this;
+		initialize();
+		waitForStart();
+		while(opModeIsActive()){
+			tick();
+		}
+	}
+
+	protected void initialize(){
+		Hardware.init(hardwareMap);
+		PersistentStorage.init(hardwareMap);
+		this.prettyTelem = new PrettyTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+	}
 
 	public void tick(){
-		super.tick();
+		simpleTick();
+	}
+
+	public static void simpleTick(){
+		Hardware.invalidateCaches();
+		getTelemetry().update();
 	}
 }

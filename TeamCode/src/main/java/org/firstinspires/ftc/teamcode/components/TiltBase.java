@@ -3,10 +3,8 @@ package org.firstinspires.ftc.teamcode.components;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.core.BasicOpModeCore;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 import org.firstinspires.ftc.teamcode.hardware.SmartTouchSensor;
@@ -67,7 +65,7 @@ public class TiltBase extends AxisComponent {
 		this.angleMotorRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 		//</editor-fold>
 
-		PrettyTelemetry prettyTelem = BasicOpModeCore.getTelemetry();
+		PrettyTelemetry prettyTelem = OpModeCore.getTelemetry();
 		prettyTelem.setShowLogsInTelemetry(true);
 		prettyTelem.setMinLogLevel(PrettyTelemetry.LogLevel.DEBUG);
 		prettyTelem.debug("START OFFSET: " + tiltPotentiometer.getOffset());
