@@ -25,8 +25,6 @@ public class MainTeleOp extends TeleOpCore {
 
         driveBase = new DriveBase(hardwareMap);
 
-        telemetry.log();
-
         prettyTelem.addData("Power Factor", driveBase::getPoseSimple);
     }
 
