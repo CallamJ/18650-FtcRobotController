@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.components;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.core.BasicOpModeCore;
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 import org.firstinspires.ftc.teamcode.utilities.Notifier;
@@ -103,7 +103,7 @@ public abstract class AxisComponent {
 		target = position;
 		while (isBusy() && !Thread.interrupted()) {
 			tick();
-			BasicOpModeCore.simpleTick();
+			OpModeCore.simpleTick();
 		}
 	}
 
@@ -118,7 +118,7 @@ public abstract class AxisComponent {
 		target = position;
 		while (isBusy() && !Thread.interrupted() && timeoutTimer.milliseconds() < timeoutMs) {
 			tick();
-			BasicOpModeCore.simpleTick();
+			OpModeCore.simpleTick();
 		}
 	}
 

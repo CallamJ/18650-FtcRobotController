@@ -139,6 +139,7 @@ public class PersistentStorage {
 
     /**
      * Saves an object by converting it to JSON.
+     * The object CANNOT have a circular reference tree (in a field, or field of a referenced object have a reference to a parent object).
      *
      * @param key    The key for storage.
      * @param object The object to save.
