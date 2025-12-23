@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import org.firstinspires.ftc.teamcode.hardware.SmartEncoder;
@@ -8,7 +8,7 @@ import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.GravityPID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
-@Config
+@Configurable
 public class PitchWrist extends AxisComponent {
 
 	//config

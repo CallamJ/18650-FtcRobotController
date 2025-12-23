@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import org.firstinspires.ftc.teamcode.drive.roadrunner.util.Encoder;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
 
@@ -12,7 +11,6 @@ import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
 public class SmartEncoder extends Device implements Caching {
     private final HardwareCache<Integer> positionCache;
     private final HardwareCache<Double> velocityCache;
-    private final Encoder rrEncoder;
     private final boolean usesRRBase;
     private final String storageKey;
 
@@ -26,27 +24,10 @@ public class SmartEncoder extends Device implements Caching {
      */
     SmartEncoder(DcMotorEx motor, String name) {
         super(name);
-        this.rrEncoder = null;
         this.positionCache = new HardwareCache<>(motor::getCurrentPosition);
         this.velocityCache = new HardwareCache<>(motor::getVelocity);
         this.usesRRBase = false;
         this.storageKey = "encoder_angle_offset(" + name + ")";
-    }
-
-    /**
-     * Constructs a SmartEncoder that wraps a RoadRunner Encoder.
-     *
-     * @param rrEncoder The RoadRunner Encoder instance.
-     */
-    SmartEncoder(Encoder rrEncoder, String name) {
-        super(name);
-        this.rrEncoder = rrEncoder;
-        this.direction = Direction.of(rrEncoder.getDirection());
-        this.positionCache = new HardwareCache<>(this.rrEncoder::getCurrentPosition);
-        this.velocityCache = new HardwareCache<>(this.rrEncoder::getCorrectedVelocity);
-        this.usesRRBase = true;
-        this.storageKey = "encoder_angle_offset(" + name + ")";
-        this.tickOffsetToZero = PersistentStorage.getInt(storageKey, 0);
     }
 
     /**
@@ -129,9 +110,6 @@ public class SmartEncoder extends Device implements Caching {
      * @param direction The new direction (FORWARD or REVERSE).
      */
     public void setDirection(Direction direction) {
-        if (rrEncoder != null) {
-            rrEncoder.setDirection(direction.toRR());
-        }
         this.direction = direction;
     }
 

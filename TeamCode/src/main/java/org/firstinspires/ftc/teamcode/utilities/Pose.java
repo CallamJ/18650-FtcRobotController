@@ -2,8 +2,6 @@ package org.firstinspires.ftc.teamcode.utilities;
 
 import androidx.annotation.NonNull;
 
-import com.acmerobotics.roadrunner.geometry.Pose2d;
-
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -20,10 +18,6 @@ import java.util.Locale;
  *     Pose newPose2D = new Pose(15, 25, 45);
  *     Pose newPose3D = new Pose(15, 25, 45, 120, 76, 50);
  *
- *     //Create a pose from a Road Runner Pose2d
- *     Pose2d rrPose1 = new Pose2d(15, 25, 90);
- *     Pose fromRRPose = Pose.from(rrPose1);
- *
  *     //Create a pose from a FTC Nav Pose2D
  *     Pose2D navPose2D1 = new Pose2D(DistanceUnit.INCH, 5, 10, AngleUnit.DEGREES, 45);
  *     Pose fromNav2D = Pose.from(navPose2D1);
@@ -33,7 +27,6 @@ import java.util.Locale;
  *     Pose fromNav3D = Pose.from(navPose3D1);
  *
  *     //Convert a pose to another type of pose
- *     Pose2d rrPose2 = newPose2D.toRR();
  *     Pose2D navPose2D2 = newPose2D.toNav();
  *     Pose3D navPose3D2 = newPose3D.toNav3D();
  *
@@ -96,20 +89,6 @@ public class Pose {
         this.pitch = AngleUnit.normalizeDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, pitch));
         this.roll = AngleUnit.normalizeDegrees(AngleUnit.DEGREES.fromUnit(angleUnit, roll));
         this.acquisitionTime = acquisitionTime;
-    }
-
-    public static Pose from(Pose2d rrPose) {
-        return new Pose(
-                rrPose.getX(),
-                rrPose.getY(),
-                0,
-                rrPose.getHeading(),
-                0,
-                0,
-                AngleUnit.RADIANS,
-                DistanceUnit.INCH,
-                0
-        );
     }
 
     public static Pose from(Pose2D navPose) {
@@ -366,15 +345,6 @@ public class Pose {
         double dy = otherPose.y - y;
         double dz = otherPose.z - z;
         return Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2) + Math.pow(dz, 2));
-    }
-
-    /**
-     * Converts this Pose into a Road Runner Pose2d.
-     *
-     * @return A {@link Pose2d} with the same x, y, and heading values, using radians for heading.
-     */
-    public Pose2d toRR() {
-        return new Pose2d(x, y, heading(AngleUnit.RADIANS));
     }
 
     /**

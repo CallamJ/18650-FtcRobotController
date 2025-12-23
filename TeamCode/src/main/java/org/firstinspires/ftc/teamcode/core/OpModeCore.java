@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.core;
 
-import com.acmerobotics.dashboard.FtcDashboard;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
@@ -34,7 +34,7 @@ public abstract class OpModeCore extends LinearOpMode {
 	protected void initialize(){
 		Hardware.init(hardwareMap);
 		PersistentStorage.init(hardwareMap);
-		this.prettyTelem = new PrettyTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+		this.prettyTelem = new PrettyTelemetry(telemetry, PanelsTelemetry.INSTANCE.getFtcTelemetry());
 	}
 
 	public void tick(){

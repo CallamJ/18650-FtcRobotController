@@ -28,8 +28,9 @@ public class PrettyTelemetry {
     private double roundingPlaces;
 
     private final Telemetry telemetry;
-    private Telemetry dashTelemetry;
+    private Telemetry panelsTelemetry;
 
+    //todo: Integrate this better with the Panels native telemetry. we probably do not need this special adaptation for Panels like we did with RR
     private final List<String> dashValueCaptions = new ArrayList<>();
     private final List<Func<?>> dashValueProducers = new ArrayList<>();
     private final Line logLine;
@@ -52,23 +53,23 @@ public class PrettyTelemetry {
     }
 
     /**
-     * Constructs a PrettyTelemetry instance with support for both driver station telemetry and FTC Dashboard telemetry.
+     * Constructs a PrettyTelemetry instance with support for both driver station telemetry and Panels telemetry.
      *
      * @param opmodeTelemetry       The FTC Telemetry instance for the driver station.
-     * @param ftcDashboardTelemetry The FTC Telemetry instance for the dashboard.
+     * @param panelsTelemetry The FTC Telemetry instance for the dashboard.
      */
-    public PrettyTelemetry(Telemetry opmodeTelemetry, Telemetry ftcDashboardTelemetry){
+    public PrettyTelemetry(Telemetry opmodeTelemetry, Telemetry panelsTelemetry){
         this(opmodeTelemetry);
-        this.dashTelemetry = ftcDashboardTelemetry;
+        this.panelsTelemetry = panelsTelemetry;
     }
 
     /**
      * Checks if the telemetry instance has an associated FTC Dashboard telemetry.
      *
-     * @return `true` if FTC Dashboard telemetry is available, otherwise `false`.
+     * @return `true` if Panels telemetry is available, otherwise `false`.
      */
     public boolean hasDashboard(){
-        return dashTelemetry != null;
+        return panelsTelemetry != null;
     }
 
     /**
@@ -372,10 +373,10 @@ public class PrettyTelemetry {
         telemetry.update();
 
         for (int i = 0; i < dashValueCaptions.size(); i++) {
-            dashTelemetry.addData(dashValueCaptions.get(i), dashValueProducers.get(i).value());
+            panelsTelemetry.addData(dashValueCaptions.get(i), dashValueProducers.get(i).value());
         }
 
-        dashTelemetry.update();
+        panelsTelemetry.update();
     }
 
 

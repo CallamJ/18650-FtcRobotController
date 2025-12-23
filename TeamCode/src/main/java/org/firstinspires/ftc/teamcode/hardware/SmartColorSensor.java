@@ -4,14 +4,14 @@ import android.graphics.Color;
 
 import androidx.annotation.NonNull;
 
-import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
-@Config
+@Configurable
 public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching {
     //configuration
     public static float HUE_THRESHOLD = 20.0f;

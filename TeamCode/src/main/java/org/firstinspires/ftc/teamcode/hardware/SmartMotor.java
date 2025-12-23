@@ -11,7 +11,6 @@ import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigu
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
-import org.firstinspires.ftc.teamcode.drive.roadrunner.util.Encoder;
 
 public class SmartMotor extends Device implements DcMotorEx, Caching {
 
@@ -29,7 +28,9 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
         super(name);
         if(hasExternalEncoder){
             this.motor = motor;
-            this.encoder = new SmartEncoder(new Encoder(motor), name);
+            //TODO: This is a patch to make this work without RR, find out how to wrap revcoders ourselves
+            //this.encoder = new SmartEncoder(new Encoder(motor), name);
+            this.encoder = new SmartEncoder(motor, name);
         } else {
             this.motor = motor;
             this.encoder = new SmartEncoder(motor, name);

@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
@@ -11,7 +11,7 @@ import org.firstinspires.ftc.teamcode.hardware.SmartTouchSensor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.GravityPID;
 import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
 
-@Config
+@Configurable
 public class TiltBase extends AxisComponent {
 	//<editor-fold desc="Config">
 
