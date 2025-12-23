@@ -165,7 +165,6 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
      */
     @Override
     public void setPowerFloat() {
-        //noinspection deprecation
         motor.setPowerFloat();
     }
 
@@ -296,7 +295,6 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
      * @param power the new power level of the motor, a value in the interval [-1.0, 1.0]
      * @see #getPower()
      * @see DcMotor#setMode(RunMode)
-     * @see DcMotor#setPowerFloat()
      */
     @Override
     public void setPower(double power) {
@@ -464,7 +462,6 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
      */
     @Override
     public void setPIDCoefficients(RunMode mode, PIDCoefficients pidCoefficients) {
-        //noinspection deprecation
         motor.setPIDCoefficients(mode, pidCoefficients);
     }
 
@@ -536,7 +533,6 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
      */
     @Override
     public PIDCoefficients getPIDCoefficients(RunMode mode) {
-        //noinspection deprecation
         return motor.getPIDCoefficients(mode);
     }
 
