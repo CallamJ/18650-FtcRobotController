@@ -38,10 +38,7 @@ Even if you have relatively advanced knowledge of Java itself, it is usually hel
 - [FIRST Tech Challenge Community](https://ftc-community.firstinspires.org/) - Online forum for technical questions
 
 ### Sample OpModes
-This project contains a large selection of Sample OpModes (robot code examples) under the FtcRobotController module which can be copied into your /teamcode module to be used as-is, or modified to suit your team's needs.
-
-- **Samples Folder:** [/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples](FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples)
-- **TeamCode readme:** [/TeamCode/src/main/java/org/firstinspires/ftc/teamcode](TeamCode/src/main/java/org/firstinspires/ftc/teamcode) - explains sample naming conventions and how to copy them
+This project contains a large selection of Sample OpModes (robot code examples) under [/FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples](FtcRobotController/src/main/java/org/firstinspires/ftc/robotcontroller/external/samples) which can be copied into your /teamcode module to be used as-is, or modified to suit your team's needs.
 
 ---
 
