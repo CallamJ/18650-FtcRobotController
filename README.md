@@ -50,9 +50,3 @@ This project contains a large selection of Sample OpModes (robot code examples) 
 ## About
 
 FTC 18650 is part of [Bennington Area Robotics](https://github.com/bennington-area-robotics), based in Bennington, Vermont.
-
-## Release Information
-
-This repo is based on **FTC SDK v11.0** (2025-2026 DECODE season).
-
-For full release notes and version history, see the [official FtcRobotController releases](https://github.com/FIRST-Tech-Challenge/FtcRobotController/releases).
