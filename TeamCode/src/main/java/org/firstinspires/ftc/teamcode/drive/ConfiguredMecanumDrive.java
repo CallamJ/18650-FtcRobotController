@@ -69,7 +69,7 @@ public class ConfiguredMecanumDrive extends MecanumDrive {
     private final List<Integer> lastEncPositions = new ArrayList<>();
     private final List<Integer> lastEncVelocities = new ArrayList<>();
 
-    public ConfiguredMecanumDrive(HardwareMap hardwareMap) {
+    public ConfiguredMecanumDrive(HardwareMap hardwareMap, DriveBaseMotorConfig config) {
         super(DriveConstants.kV, DriveConstants.kA, DriveConstants.kStatic, DriveConstants.TRACK_WIDTH, DriveConstants.TRACK_WIDTH, LATERAL_MULTIPLIER);
 
         follower = new HolonomicPIDVAFollower(TRANSLATIONAL_PID, TRANSLATIONAL_PID, HEADING_PID,
@@ -85,16 +85,16 @@ public class ConfiguredMecanumDrive extends MecanumDrive {
                 DriveConstants.LOGO_FACING_DIR, DriveConstants.USB_FACING_DIR));
         imu.initialize(parameters);*/
 
-        leftFront = hardwareMap.get(DcMotorEx.class, "LFront");
-        leftRear = hardwareMap.get(DcMotorEx.class, "LRear");
-        rightRear = hardwareMap.get(DcMotorEx.class, "RRear");
-        rightFront = hardwareMap.get(DcMotorEx.class, "RFront");
+        leftFront = hardwareMap.get(DcMotorEx.class, config.leftFrontName);
+        leftRear = hardwareMap.get(DcMotorEx.class, config.leftRearName);
+        rightRear = hardwareMap.get(DcMotorEx.class, config.rightRearName);
+        rightFront = hardwareMap.get(DcMotorEx.class, config.rightFrontName);
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
 
         for (DcMotorEx motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
-            motorConfigurationType.setAchieveableMaxRPMFraction(1.0); //TODO FOR EBEN - this could account for some of the perceived error; shouldn't this be something a little lower?
+            motorConfigurationType.setAchieveableMaxRPMFraction(1.0);
             motor.setMotorType(motorConfigurationType);
         }
 
@@ -108,11 +108,10 @@ public class ConfiguredMecanumDrive extends MecanumDrive {
             setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, DriveConstants.MOTOR_VELO_PID);
         }
 
-        //reverse any motors using DcMotor.setDirection()
-        leftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightRear.setDirection(DcMotorSimple.Direction.FORWARD);
-        rightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-
+        leftFront.setDirection(config.leftFrontDirection.toMotorDirection());
+        leftRear.setDirection(config.leftRearDirection.toMotorDirection());
+        rightRear.setDirection(config.rightRearDirection.toMotorDirection());
+        rightFront.setDirection(config.rightFrontDirection.toMotorDirection());
 
         List<Integer> lastTrackingEncPositions = new ArrayList<>();
         List<Integer> lastTrackingEncVelocities = new ArrayList<>();

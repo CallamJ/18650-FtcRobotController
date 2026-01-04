@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.teamcode.drive.roadrunner.util.Encoder;
 
 /**
@@ -26,5 +27,9 @@ public enum Direction {
      */
     public Encoder.Direction toRR(){
         return this == FORWARD ? Encoder.Direction.FORWARD : Encoder.Direction.REVERSE;
+    }
+
+    public DcMotorSimple.Direction toMotorDirection(){
+        return this == FORWARD ? DcMotorSimple.Direction.FORWARD : DcMotorSimple.Direction.REVERSE;
     }
 }
