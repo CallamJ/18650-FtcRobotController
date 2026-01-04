@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
+import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
+import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Config
 @TeleOp(name = "1 - Main TeleOp")
@@ -23,7 +25,13 @@ public class MainTeleOp extends TeleOpCore {
     protected void initialize(){
         super.initialize();
 
-        driveBase = new DriveBase(hardwareMap);
+        DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
+        configBuilder.leftFront("LFront", Direction.FORWARD);
+        configBuilder.leftRear("LRear", Direction.REVERSE);
+        configBuilder.rightFront("RFront", Direction.FORWARD);
+        configBuilder.rightRear("RRear", Direction.REVERSE);
+
+        driveBase = new DriveBase(hardwareMap, configBuilder.build());
 
         prettyTelem.addData("Power Factor", driveBase::getPoseSimple);
     }

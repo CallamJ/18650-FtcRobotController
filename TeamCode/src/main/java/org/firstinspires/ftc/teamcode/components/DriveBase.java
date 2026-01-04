@@ -8,6 +8,7 @@ import com.acmerobotics.roadrunner.trajectory.Trajectory;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.drive.ConfiguredMecanumDrive;
+import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
@@ -18,8 +19,8 @@ public class DriveBase extends ConfiguredMecanumDrive {
 
     private double powerFactor = 1;
 
-    public DriveBase(HardwareMap hardwareMap) {
-        super(hardwareMap);
+    public DriveBase(HardwareMap hardwareMap, DriveBaseMotorConfig config) {
+        super(hardwareMap, config);
         setPoseEstimate(new Pose2d(0, 63, Math.toRadians(-90)));
     }
 
