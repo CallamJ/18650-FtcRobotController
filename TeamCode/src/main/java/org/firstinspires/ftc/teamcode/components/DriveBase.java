@@ -3,6 +3,9 @@ package org.firstinspires.ftc.teamcode.components;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.teamcode.drive.ConfiguredMecanumDrive;
+import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
+import org.firstinspires.ftc.teamcode.drive.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
@@ -12,7 +15,8 @@ public class DriveBase {
 
     private double powerFactor = 1;
 
-    public DriveBase(HardwareMap hardwareMap) {
+    public DriveBase(HardwareMap hardwareMap, DriveBaseMotorConfig config) {
+
     }
 
     /**
