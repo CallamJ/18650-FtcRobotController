@@ -2,10 +2,10 @@ package org.firstinspires.ftc.teamcode.components;
 
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 
-public class Intake {
-    private SmartMotor motor;
+public class Collector {
+    private final SmartMotor motor;
 
-    public Intake(SmartMotor motor) {
+    public Collector(SmartMotor motor) {
         this.motor = motor;
     }
 
@@ -15,5 +15,9 @@ public class Intake {
 
     public void stop() {
         motor.setPower(0);
+    }
+
+    public boolean isPowered(){
+        return motor.getPower() > 0;
     }
 }

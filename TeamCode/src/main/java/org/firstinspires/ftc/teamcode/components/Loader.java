@@ -4,10 +4,10 @@ import com.acmerobotics.dashboard.config.Config;
 import org.firstinspires.ftc.teamcode.hardware.SmartServo;
 
 @Config
-public class Feeder {
+public class Loader {
     private SmartServo servo;
 
-    public Feeder(SmartServo servo) {
+    public Loader(SmartServo servo) {
         this.servo = servo;
     }
 

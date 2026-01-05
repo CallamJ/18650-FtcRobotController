@@ -5,7 +5,7 @@ import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 
 @Config
-public class Mixer extends AxisComponent {
+public class Indexer extends AxisComponent {
 
     public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02;
     public static float ticksPerDegree = 8192f/360f;
@@ -13,7 +13,7 @@ public class Mixer extends AxisComponent {
     private final SmartMotor motor;
 
 
-    public Mixer(SmartMotor motor) {
+    public Indexer(SmartMotor motor) {
         super(
                 new PID.Builder()
                 .setKP(() -> kP)
@@ -23,6 +23,8 @@ public class Mixer extends AxisComponent {
                 .build()
         );
         this.motor = motor;
+
+        motor.getEncoder().reset();
     }
 
     @Override
@@ -34,5 +36,37 @@ public class Mixer extends AxisComponent {
     @Override
     public double getCurrentPosition() {
         return motor.getCurrentPosition() / ticksPerDegree;
+    }
+
+    public long getCurrentIndex(){
+        return degreesToIndex(getCurrentPosition());
+    }
+
+    public long getTargetIndex(){
+        return degreesToIndex(getTargetPosition());
+    }
+
+    public void setTargetIndex(long index){
+        setTargetPosition(index * 120);
+    }
+
+    public void advanceIndexClockwise(){
+        advanceIndexClockwise(1);
+    }
+
+    public void advanceIndexClockwise(int count){
+        setTargetIndex(getTargetIndex() + count);
+    }
+
+    public void advanceIndexCounterclockwise(){
+        advanceIndexCounterclockwise(1);
+    }
+
+    public void advanceIndexCounterclockwise(int count){
+        setTargetIndex(getTargetIndex() - count);
+    }
+
+    private long degreesToIndex(double degrees){
+        return Math.round(degrees / 120);
     }
 }
