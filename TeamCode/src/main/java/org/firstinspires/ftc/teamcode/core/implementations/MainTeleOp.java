@@ -17,9 +17,6 @@ import org.firstinspires.ftc.teamcode.utilities.Direction;
 public class MainTeleOp extends TeleOpCore {
     private boolean isHighPower = false;
     protected static DriveBase driveBase;
-    protected static Loader loader;
-    protected static Collector collector;
-    protected static Indexer indexer;
 
     //<editor-fold desc="Config">
     public static float LOW_POWER_MODIFIER = 0.25f;
@@ -40,33 +37,12 @@ public class MainTeleOp extends TeleOpCore {
 
         driveBase = new DriveBase(hardwareMap, configBuilder.build());
 
-        loader = new Loader(Hardware.getServo("loaderServo"));
-
-        indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
-
-        collector = new Collector(Hardware.getMotor("collectorMotor"));
-
         prettyTelem.addData("Power Factor", driveBase::getPoseSimple);
     }
 
     @Override
     protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
         driveBase.moveUsingRR(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
-
-        if(gamepad1.leftBumperWasPressed()){
-            indexer.advanceIndexCounterclockwise();
-        }
-        if(gamepad1.rightBumperWasPressed()){
-            indexer.advanceIndexClockwise();
-        }
-
-        if(gamepad1.aWasPressed()){
-            if(collector.isPowered()){
-                collector.stop();
-            } else {
-                collector.setPower(0.5);
-            }
-        }
     }
 
     protected void configureTelemetry(){}
