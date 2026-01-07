@@ -4,12 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
-import org.firstinspires.ftc.teamcode.components.Loader;
-import org.firstinspires.ftc.teamcode.components.Collector;
-import org.firstinspires.ftc.teamcode.components.Indexer;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Config

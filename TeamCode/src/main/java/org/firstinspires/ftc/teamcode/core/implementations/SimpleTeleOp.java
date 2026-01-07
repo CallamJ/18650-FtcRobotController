@@ -6,7 +6,7 @@ import com.qualcomm.robotcore.hardware.Gamepad;
 import org.firstinspires.ftc.teamcode.components.Collector;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
 import org.firstinspires.ftc.teamcode.components.Indexer;
-import org.firstinspires.ftc.teamcode.components.Loader;
+import org.firstinspires.ftc.teamcode.components.Feeder;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
@@ -16,7 +16,7 @@ import org.firstinspires.ftc.teamcode.utilities.Direction;
 @TeleOp(name = "2 - Simple TeleOp")
 public class SimpleTeleOp extends TeleOpCore {
     protected static DriveBase driveBase;
-    protected static Loader loader;
+    protected static Feeder feeder;
     protected static Collector collector;
     protected static Indexer indexer;
 
@@ -32,7 +32,10 @@ public class SimpleTeleOp extends TeleOpCore {
 
         driveBase = new DriveBase(hardwareMap, configBuilder.build());
 
-        loader = new Loader(Hardware.getServo("loaderServo"));
+        feeder = new Feeder(
+                Hardware.getServo("feederServo"),
+                Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+        );
 
         indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
 
@@ -57,5 +60,12 @@ public class SimpleTeleOp extends TeleOpCore {
                 collector.setPower(0.5);
             }
         }
+    }
+
+    @Override
+    public void tick(){
+        super.tick();
+        feeder.tick();
+        indexer.tick();
     }
 }
