@@ -27,6 +27,10 @@ public class Feeder {
         return triggerFuture;
     }
 
+    public boolean isBusy(){
+        return state != State.RESTING;
+    }
+
     public void tick() {
         switch (state) {
             case RESTING : {
