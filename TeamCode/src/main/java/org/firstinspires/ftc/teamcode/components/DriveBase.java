@@ -45,10 +45,10 @@ public class DriveBase extends ConfiguredMecanumDrive {
         // This ensures all the powers maintain the correct ratio, but only when
         // at least one is out of the range [-1, 1]
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(turn), 1);
-        double leftFront = ((y - x + turn) / denominator) * powerFactor;
-        double leftRear = ((y + x + turn) / denominator) * powerFactor;
-        double rightFront = ((y + x - turn) / denominator) * powerFactor;
-        double rightRear = ((y - x - turn) / denominator) * powerFactor;
+        double leftFront = ((y - x - turn) / denominator) * powerFactor;
+        double leftRear = ((y + x - turn) / denominator) * powerFactor;
+        double rightFront = ((y + x + turn) / denominator) * powerFactor;
+        double rightRear = ((y - x + turn) / denominator) * powerFactor;
 
         setMotorPowers(leftFront, leftRear, rightRear, rightFront);
     }

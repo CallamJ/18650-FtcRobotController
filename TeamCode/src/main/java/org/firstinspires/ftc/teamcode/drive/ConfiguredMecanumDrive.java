@@ -26,10 +26,12 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigurationType;
 
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.roadrunner.trajectorysequence.TrajectorySequence;
 import org.firstinspires.ftc.teamcode.drive.roadrunner.trajectorysequence.TrajectorySequenceBuilder;
 import org.firstinspires.ftc.teamcode.drive.roadrunner.trajectorysequence.TrajectorySequenceRunner;
 import org.firstinspires.ftc.teamcode.drive.roadrunner.util.LynxModuleUtil;
+import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,6 +93,16 @@ public class ConfiguredMecanumDrive extends MecanumDrive {
         rightFront = hardwareMap.get(DcMotorEx.class, config.rightFrontName);
 
         motors = Arrays.asList(leftFront, leftRear, rightRear, rightFront);
+//
+//        OpModeCore.getTelemetry().addLine("Drive Base")
+//                .addData("LF Power", leftFront::getPower)
+//                .addData("LF Velocity", leftFront::getVelocity)
+//                .addData("LR Power", leftRear::getPower)
+//                .addData("LR Velocity", leftRear::getVelocity)
+//                .addData("RF Power", rightFront::getPower)
+//                .addData("RF Velocity", rightFront::getVelocity)
+//                .addData("RR Power", rightRear::getPower)
+//                .addData("RR Velocity", rightRear::getVelocity);
 
         for (DcMotorEx motor : motors) {
             MotorConfigurationType motorConfigurationType = motor.getMotorType().clone();
@@ -122,6 +134,18 @@ public class ConfiguredMecanumDrive extends MecanumDrive {
         trajectorySequenceRunner = new TrajectorySequenceRunner(
                 follower, HEADING_PID, batteryVoltageSensor,
                 lastEncPositions, lastEncVelocities, lastTrackingEncPositions, lastTrackingEncVelocities
+        );
+    }
+
+    public ConfiguredMecanumDrive(HardwareMap hardwareMap){
+        this(
+                hardwareMap,
+                new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder()
+                        .leftFront("LFront", Direction.FORWARD)
+                        .leftRear("LRear", Direction.FORWARD)
+                        .rightFront("RFront", Direction.REVERSE)
+                        .rightRear("RRear", Direction.FORWARD)
+                        .build()
         );
     }
 

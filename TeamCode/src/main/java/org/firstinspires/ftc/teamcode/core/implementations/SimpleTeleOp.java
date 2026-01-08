@@ -26,16 +26,16 @@ public class SimpleTeleOp extends TeleOpCore {
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
-        configBuilder.leftRear("LRear", Direction.REVERSE);
-        configBuilder.rightFront("RFront", Direction.FORWARD);
-        configBuilder.rightRear("RRear", Direction.REVERSE);
+        configBuilder.leftRear("LRear", Direction.FORWARD);
+        configBuilder.rightFront("RFront", Direction.REVERSE);
+        configBuilder.rightRear("RRear", Direction.FORWARD);
 
         driveBase = new DriveBase(hardwareMap, configBuilder.build());
 
-        feeder = new Feeder(
-                Hardware.getServo("feederServo"),
-                Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
-        );
+//        feeder = new Feeder(
+//                Hardware.getServo("feederServo"),
+//                Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+//        );
 
         indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
 
@@ -44,20 +44,28 @@ public class SimpleTeleOp extends TeleOpCore {
 
     @Override
     protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
-        driveBase.moveUsingRR(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+        driveBase.moveUsingPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
 
-        if(gamepad1.leftBumperWasPressed()){
+        if(gamepad1.left_bumper && !lastGamepad1.left_bumper){
             indexer.advanceIndexCounterclockwise();
         }
-        if(gamepad1.rightBumperWasPressed()){
+        if(gamepad1.right_bumper && !lastGamepad1.right_bumper){
             indexer.advanceIndexClockwise();
         }
 
-        if(gamepad1.aWasPressed()){
+        if(gamepad1.a && !lastGamepad1.a){
             if(collector.isPowered()){
                 collector.stop();
             } else {
-                collector.setPower(0.5);
+                collector.setPower(1);
+            }
+        }
+
+        if(gamepad1.b && !lastGamepad1.b){
+            if(collector.isPowered()){
+                collector.stop();
+            } else {
+                collector.setPower(-0.5);
             }
         }
     }
@@ -65,7 +73,7 @@ public class SimpleTeleOp extends TeleOpCore {
     @Override
     public void tick(){
         super.tick();
-        feeder.tick();
+        //feeder.tick();
         indexer.tick();
     }
 }
