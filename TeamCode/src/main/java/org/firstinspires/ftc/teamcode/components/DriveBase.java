@@ -1,22 +1,58 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.pedropathing.Drivetrain;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.follower.FollowerConstants;
+import com.pedropathing.ftc.drivetrains.Mecanum;
+import com.pedropathing.ftc.drivetrains.MecanumConstants;
+import com.pedropathing.ftc.localization.constants.PinpointConstants;
+import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
+import com.pedropathing.localization.Localizer;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
-import org.firstinspires.ftc.teamcode.drive.ConfiguredMecanumDrive;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
-import org.firstinspires.ftc.teamcode.drive.StandardTrackingWheelLocalizer;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
 public class DriveBase {
+
+    private final Drivetrain drivetrain;
+    private final Localizer localizer;
+    private final Follower follower;
     public static float TRANSLATIONAL_VELOCITY_MULTIPLIER = 40f;
     public static float HEADING_VELOCITY_MULTIPLIER = 3f;
 
     private double powerFactor = 1;
 
     public DriveBase(HardwareMap hardwareMap, DriveBaseMotorConfig config) {
+        MecanumConstants mConstants = new MecanumConstants();
 
+        mConstants.leftFrontMotorName = config.leftFrontName;
+        mConstants.rightFrontMotorName = config.rightFrontName;
+        mConstants.leftRearMotorName = config.leftRearName;
+        mConstants.rightRearMotorName = config.rightRearName;
+
+        mConstants.leftFrontMotorDirection = config.leftFrontDirection.toMotorDirection();
+        mConstants.rightFrontMotorDirection = config.rightFrontDirection.toMotorDirection();
+        mConstants.leftRearMotorDirection = config.leftRearDirection.toMotorDirection();
+        mConstants.rightRearMotorDirection = config.rightRearDirection.toMotorDirection();
+
+        //todo: add values for drivetrain hardware constants
+
+        drivetrain = new Mecanum(hardwareMap, mConstants);
+
+        PinpointConstants pinpointConstants = new PinpointConstants();
+        pinpointConstants.hardwareMapName = "pinpoint";
+        //todo: add values for pinpoint system hardware constants
+        localizer = new PinpointLocalizer(hardwareMap, pinpointConstants);
+
+
+        FollowerConstants followerConstants = new FollowerConstants();
+
+        //todo: tune follower constants
+
+        follower = new Follower(followerConstants, localizer, drivetrain);
     }
 
     /**
@@ -64,4 +100,5 @@ public class DriveBase {
     public void setPowerFactor(double powerFactor){
         this.powerFactor = powerFactor;
     }
+
 }
