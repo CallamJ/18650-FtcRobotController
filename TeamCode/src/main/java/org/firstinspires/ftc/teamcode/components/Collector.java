@@ -15,6 +15,10 @@ public class Collector {
         motor.setPower(power);
     }
 
+    public double getPower() {
+        return motor.getPower();
+    }
+
     public void stop() {
         motor.setPower(0);
     }

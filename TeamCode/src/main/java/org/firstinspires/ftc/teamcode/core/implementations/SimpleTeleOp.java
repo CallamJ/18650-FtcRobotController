@@ -30,42 +30,72 @@ public class SimpleTeleOp extends TeleOpCore {
         configBuilder.rightFront("RFront", Direction.REVERSE);
         configBuilder.rightRear("RRear", Direction.FORWARD);
 
-        driveBase = new DriveBase(hardwareMap, configBuilder.build());
+        try {
+            driveBase = new DriveBase(hardwareMap, configBuilder.build());
+        } catch (Exception e) {
+            prettyTelem.error("Drive base failed to initialize, skipping: " + e.getMessage());
+        }
 
-//        feeder = new Feeder(
-//                Hardware.getServo("feederServo"),
-//                Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
-//        );
+        try {
+            feeder = new Feeder(
+                    Hardware.getServo("feederServo"),
+                    Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+            );
+        } catch (Exception e) {
+            prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
+        }
 
-        indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+        try {
+            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+        } catch (Exception e) {
+            prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
+        }
 
-        collector = new Collector(Hardware.getMotor("collectorMotor"));
+        try {
+            collector = new Collector(Hardware.getMotor("collectorMotor"));
+        } catch (Exception e) {
+            prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
+        }
     }
 
     @Override
     protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
-        driveBase.moveUsingPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
-
-        if(gamepad1.left_bumper && !lastGamepad1.left_bumper){
-            indexer.advanceIndexCounterclockwise();
-        }
-        if(gamepad1.right_bumper && !lastGamepad1.right_bumper){
-            indexer.advanceIndexClockwise();
+        if(driveBase != null){
+            driveBase.moveUsingPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
         }
 
-        if(gamepad1.a && !lastGamepad1.a){
-            if(collector.isPowered()){
-                collector.stop();
-            } else {
-                collector.setPower(1);
+        if(feeder != null){
+            if(gamepad1.x == lastGamepad1.x){
+                feeder.trigger();
             }
         }
 
-        if(gamepad1.b && !lastGamepad1.b){
-            if(collector.isPowered()){
-                collector.stop();
-            } else {
-                collector.setPower(-0.5);
+        if(indexer != null){
+            if(gamepad1.left_bumper && !lastGamepad1.left_bumper){
+                indexer.advanceIndexCounterclockwise();
+            }
+            if(gamepad1.right_bumper && !lastGamepad1.right_bumper){
+                indexer.advanceIndexClockwise();
+            }
+        }
+
+        if(collector != null){
+            if(gamepad1.a && !lastGamepad1.a){
+                double forwardPower = 1;
+                if(collector.getPower() == forwardPower){
+                    collector.stop();
+                } else {
+                    collector.setPower(forwardPower);
+                }
+            }
+
+            if(gamepad1.b && !lastGamepad1.b){
+                double reversePower = 0.5;
+                if(collector.getPower() == reversePower){
+                    collector.stop();
+                } else {
+                    collector.setPower(reversePower);
+                }
             }
         }
     }
@@ -73,7 +103,11 @@ public class SimpleTeleOp extends TeleOpCore {
     @Override
     public void tick(){
         super.tick();
-        //feeder.tick();
-        indexer.tick();
+        if(feeder != null){
+            feeder.tick();
+        }
+        if(indexer != null){
+            indexer.tick();
+        }
     }
 }
