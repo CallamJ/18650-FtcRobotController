@@ -46,7 +46,7 @@ public class SimpleTeleOp extends TeleOpCore {
         }
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
         } catch (Exception e) {
             prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
         }
@@ -90,7 +90,7 @@ public class SimpleTeleOp extends TeleOpCore {
             }
 
             if(gamepad1.b && !lastGamepad1.b){
-                double reversePower = 0.5;
+                double reversePower = -0.5;
                 if(collector.getPower() == reversePower){
                     collector.stop();
                 } else {
