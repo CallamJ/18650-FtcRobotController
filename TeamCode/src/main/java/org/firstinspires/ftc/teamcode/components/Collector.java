@@ -24,6 +24,6 @@ public class Collector {
     }
 
     public boolean isPowered(){
-        return motor.getPower() > 0;
+        return motor.getPower() != 0;
     }
 }
