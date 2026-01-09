@@ -1,11 +1,12 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 import org.firstinspires.ftc.teamcode.hardware.SmartServo;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
-@Config
+@Configurable
 public class Feeder {
     private final SmartServo servo;
     private final SmartPotentiometer potentiometer;
