@@ -22,6 +22,8 @@ public class SimpleTeleOp extends TeleOpCore {
 
     @Override
     protected void initialize(){
+        //noinspection DuplicatedCode
+
         super.initialize();
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
@@ -60,6 +62,8 @@ public class SimpleTeleOp extends TeleOpCore {
 
     @Override
     protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
+        //noinspection DuplicatedCode
+
         if(driveBase != null){
             driveBase.moveUsingPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
         }
