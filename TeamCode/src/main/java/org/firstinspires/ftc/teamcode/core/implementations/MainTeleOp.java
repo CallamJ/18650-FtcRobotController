@@ -7,6 +7,7 @@ import org.firstinspires.ftc.teamcode.components.Collector;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
 import org.firstinspires.ftc.teamcode.components.Feeder;
 import org.firstinspires.ftc.teamcode.components.Indexer;
+import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
@@ -61,30 +62,30 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
+    protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
         //noinspection DuplicatedCode
 
         if(driveBase != null){
-            driveBase.moveUsingPower(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+            driveBase.moveUsingPower(gamepad1.leftStickX, gamepad1.leftStickY, gamepad1.rightStickX);
         }
 
         if(feeder != null){
-            if(gamepad1.x == lastGamepad1.x){
+            if(gamepad1.xPressed()){
                 feeder.trigger();
             }
         }
 
         if(indexer != null){
-            if(gamepad1.left_bumper && !lastGamepad1.left_bumper){
+            if(gamepad1.leftBumperPressed()){
                 indexer.advanceIndexCounterclockwise();
             }
-            if(gamepad1.right_bumper && !lastGamepad1.right_bumper){
+            if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
             }
         }
 
         if(collector != null){
-            if(gamepad1.a && !lastGamepad1.a){
+            if(gamepad1.aPressed()){
                 double forwardPower = 1;
                 if(collector.getPower() == forwardPower){
                     collector.stop();
@@ -93,7 +94,7 @@ public class MainTeleOp extends TeleOpCore {
                 }
             }
 
-            if(gamepad1.b && !lastGamepad1.b){
+            if(gamepad1.bPressed()){
                 double reversePower = 0.5;
                 if(collector.getPower() == reversePower){
                     collector.stop();

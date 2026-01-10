@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
@@ -23,7 +24,7 @@ public class MotorIdentifier extends TeleOpCore {
     }
 
     @Override
-    protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
+    protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
         if(gamepad1.a) {
             this.leftFront.setPower(0.5);
         } else {
