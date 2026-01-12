@@ -3,43 +3,116 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
+import org.firstinspires.ftc.teamcode.components.Collector;
 import org.firstinspires.ftc.teamcode.components.DriveBase;
+import org.firstinspires.ftc.teamcode.components.Feeder;
+import org.firstinspires.ftc.teamcode.components.Indexer;
+import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
+import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Configurable
 @TeleOp(name = "1 - Main TeleOp")
 public class MainTeleOp extends TeleOpCore {
-    private boolean isHighPower = false;
     protected static DriveBase driveBase;
-
-    //<editor-fold desc="Config">
-    public static float LOW_POWER_MODIFIER = 0.25f;
-    public static float HIGH_POWER_MODIFIER = 0.75f;
-    public static float MAX_INCHES_PER_SECOND = 12f;
-    //</editor-fold>
-
+    protected static Feeder feeder;
+    protected static Collector collector;
+    protected static Indexer indexer;
 
     @Override
     protected void initialize(){
+        //noinspection DuplicatedCode
+
         super.initialize();
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
-        configBuilder.leftRear("LRear", Direction.REVERSE);
-        configBuilder.rightFront("RFront", Direction.FORWARD);
-        configBuilder.rightRear("RRear", Direction.REVERSE);
+        configBuilder.leftRear("LRear", Direction.FORWARD);
+        configBuilder.rightFront("RFront", Direction.REVERSE);
+        configBuilder.rightRear("RRear", Direction.FORWARD);
 
-        driveBase = new DriveBase(hardwareMap, configBuilder.build());
+        try {
+            driveBase = new DriveBase(hardwareMap, configBuilder.build());
+        } catch (Exception e) {
+            prettyTelem.error("Drive base failed to initialize, skipping: " + e.getMessage());
+        }
 
-        prettyTelem.addData("Power Factor", driveBase::getPoseSimple);
+        try {
+            feeder = new Feeder(
+                    Hardware.getServo("feederServo"),
+                    Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+            );
+        } catch (Exception e) {
+            prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
+            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+        } catch (Exception e) {
+            prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
+            collector = new Collector(Hardware.getMotor("collectorMotor"));
+        } catch (Exception e) {
+            prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
+        }
     }
 
     @Override
-    protected void checkGamepads(Gamepad gamepad1, Gamepad gamepad2, Gamepad lastGamepad1, Gamepad lastGamepad2) {
-        driveBase.moveUsingRR(gamepad1.left_stick_x, gamepad1.left_stick_y, gamepad1.right_stick_x);
+    protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
+        //noinspection DuplicatedCode
+
+        if(driveBase != null){
+            driveBase.moveUsingPower(gamepad1.leftStickX, gamepad1.leftStickY, gamepad1.rightStickX);
+        }
+
+        if(feeder != null){
+            if(gamepad1.xPressed()){
+                feeder.trigger();
+            }
+        }
+
+        if(indexer != null){
+            if(gamepad1.leftBumperPressed()){
+                indexer.advanceIndexCounterclockwise();
+            }
+            if(gamepad1.rightBumperPressed()){
+                indexer.advanceIndexClockwise();
+            }
+        }
+
+        if(collector != null){
+            if(gamepad1.aPressed()){
+                double forwardPower = 1;
+                if(collector.getPower() == forwardPower){
+                    collector.stop();
+                } else {
+                    collector.setPower(forwardPower);
+                }
+            }
+
+            if(gamepad1.bPressed()){
+                double reversePower = 0.5;
+                if(collector.getPower() == reversePower){
+                    collector.stop();
+                } else {
+                    collector.setPower(reversePower);
+                }
+            }
+        }
     }
 
-    protected void configureTelemetry(){}
+    @Override
+    public void tick(){
+        super.tick();
+        if(feeder != null){
+            feeder.tick();
+        }
+        if(indexer != null){
+            indexer.tick();
+        }
+    }
 }
