@@ -2,11 +2,8 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Gamepad;
-import org.firstinspires.ftc.teamcode.components.Collector;
-import org.firstinspires.ftc.teamcode.components.DriveBase;
-import org.firstinspires.ftc.teamcode.components.Feeder;
-import org.firstinspires.ftc.teamcode.components.Indexer;
+import com.qualcomm.robotcore.hardware.CRServo;
+import org.firstinspires.ftc.teamcode.components.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
@@ -20,6 +17,7 @@ public class MainTeleOp extends TeleOpCore {
     protected static Feeder feeder;
     protected static Collector collector;
     protected static Indexer indexer;
+    protected static Launcher launcher;
 
     @Override
     protected void initialize(){
@@ -41,7 +39,7 @@ public class MainTeleOp extends TeleOpCore {
 
         try {
             feeder = new Feeder(
-                    Hardware.getServo("feederServo"),
+                    hardwareMap.get(CRServo.class, "feederServo"),
                     Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
         } catch (Exception e) {
@@ -49,9 +47,15 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
         } catch (Exception e) {
             prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
+            launcher = new Launcher(Hardware.getMotor("launcherMotor"));
+        } catch (Exception e) {
+            prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
@@ -70,7 +74,7 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         if(feeder != null){
-            if(gamepad1.xPressed()){
+            if(gamepad1.yPressed()){
                 feeder.trigger();
             }
         }
@@ -81,6 +85,17 @@ public class MainTeleOp extends TeleOpCore {
             }
             if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
+            }
+        }
+
+        if(launcher != null){
+            if(gamepad1.xPressed()){
+                double launcherVelocity = 15000;
+                if(launcher.getTargetVelocity() == launcherVelocity){
+                    launcher.stop();
+                } else {
+                    launcher.setTargetVelocity(launcherVelocity);
+                }
             }
         }
 
@@ -113,6 +128,9 @@ public class MainTeleOp extends TeleOpCore {
         }
         if(indexer != null){
             indexer.tick();
+        }
+        if(launcher != null){
+            launcher.tick();
         }
     }
 }
