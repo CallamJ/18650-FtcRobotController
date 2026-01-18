@@ -9,8 +9,8 @@ import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 @Config
 public class Feeder extends AxisComponent {
-    public static double kP = 0.005, kI = 0, kD = 0, kF = 0.025;
-    public static double rKP = 0.005, rKI = 0, rKD = 0, rKF = 0.025;
+    public static double kP = 0.005, kI = 0, kD = 0, kF = 0.05;
+    public static double rKP = 0.005, rKI = 0, rKD = 0, rKF = 0.1;
     public static double gravity = 0.05, tolerance = 1;
 
     private final CRServo servo;
@@ -41,10 +41,19 @@ public class Feeder extends AxisComponent {
         this.servo = servo;
         this.potentiometer = potentiometer;
 
+        GravityPID pid = (GravityPID) controller;
+
         OpModeCore.getTelemetry().addLine("Feeder")
                 .addData("Current Angle", this::getCurrentPosition)
                 .addData("Target Angle", this::getTargetPosition)
-                .addData("State", () -> state );
+                .addData("State", () -> state )
+                .addData("P Result", pid::pResult)
+                .addData("I Result", pid::iResult)
+                .addData("D Result", pid::dResult)
+                .addData("F Result", pid::fResult)
+                .addData("G Result", pid::gResult)
+                .addData("Total Result", pid::result);
+
     }
 
     /**
@@ -65,7 +74,7 @@ public class Feeder extends AxisComponent {
                 break;
             }
             case TRIGGERED: {
-                if(!isBusy()){
+                if(getCurrentPosition() >= triggerAngle - tolerance) {
                     setTargetPosition(restAngle);
                     state = State.RETURNING_TO_REST;
                 } else {
@@ -74,7 +83,7 @@ public class Feeder extends AxisComponent {
                 break;
             }
             case RETURNING_TO_REST: {
-                if(!isBusy()){
+                if(getCurrentPosition() <= restAngle + tolerance) {
                     state = State.RESTING;
                     triggerFuture.complete(null);
                 }
@@ -85,8 +94,17 @@ public class Feeder extends AxisComponent {
 
     @Override
     protected void tickPIDF() {
-        controller.calc(getTargetPosition(), getCurrentPosition());
-        double power = controller.result();
+        double power = 0;
+        if(state == State.RESTING){
+            power = 0;
+        } else {
+            if(getCurrentPosition() > getTargetPosition()){
+                power = -0.5;
+            } else if (getCurrentPosition() < getTargetPosition()) {
+                power = 0.5;
+            }
+        }
+
         this.servo.setPower(reverseServo ? -power : power);
     }
 
