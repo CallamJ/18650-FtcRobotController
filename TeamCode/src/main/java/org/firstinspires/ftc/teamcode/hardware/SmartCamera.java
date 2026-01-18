@@ -22,7 +22,7 @@ public class SmartCamera extends Device implements CameraName {
     private final String name;
     private final Pose pose;
 
-    //todo link this with april tag processors better
+    //todo make this wrap WebcamName
 
     /**
      * @param cameraName base camera object to operate on.
