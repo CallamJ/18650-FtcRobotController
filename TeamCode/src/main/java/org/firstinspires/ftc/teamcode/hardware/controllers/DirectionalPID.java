@@ -6,6 +6,11 @@ public class DirectionalPID extends PID implements ControlAlgorithm {
 	private final DoubleSupplier kPForward, kIForward, kDForward, kFForward;
 	private final DoubleSupplier kPReverse, kIReverse, kDReverse, kFReverse;
 
+	protected double rPResult;
+	protected double rIResult;
+	protected double rDResult;
+	protected double rFResult;
+
 	protected DirectionalPID(
 			DoubleSupplier kPForward, DoubleSupplier kIForward, DoubleSupplier kDForward, DoubleSupplier kFForward,
 			DoubleSupplier kPReverse, DoubleSupplier kIReverse, DoubleSupplier kDReverse, DoubleSupplier kFReverse,

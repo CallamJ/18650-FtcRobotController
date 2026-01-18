@@ -5,6 +5,7 @@ import java.util.function.DoubleSupplier;
 public class GravityPID extends DirectionalPID implements ControlAlgorithm {
     private final GravityFunction gravityFunc;
     private final DoubleSupplier g;
+    protected double gResult;
 
     protected GravityPID(
             DoubleSupplier kPForward, DoubleSupplier kIForward, DoubleSupplier kDForward, DoubleSupplier kFForward,
@@ -21,7 +22,12 @@ public class GravityPID extends DirectionalPID implements ControlAlgorithm {
         double basePID = super.calc(target, actual);
         double gravityEffect = gravityFunc.apply(g.getAsDouble(), actual) * g.getAsDouble();
         result = basePID + gravityEffect;
+        gResult = gravityEffect;
         return result;
+    }
+
+    public double gResult(){
+        return gResult;
     }
 
     public static class Builder {

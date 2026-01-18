@@ -16,6 +16,7 @@ import java.util.function.DoubleSupplier;
  */
 public class PID implements ControlAlgorithm {
     protected double integral, lastError, tolerance, minimum, result;
+    protected double pResult, iResult, dResult, fResult;
     protected final ElapsedTime timer = new ElapsedTime();
     private boolean isBusy = true;
     private Direction direction;
@@ -82,10 +83,21 @@ public class PID implements ControlAlgorithm {
                 output = -output;
             }
 
+            pResult = p;
+            iResult = integral;
+            dResult = d;
+            fResult = kF;
+
+
             result = output;
             isBusy = true;
         } else {
             result = kF * (Math.abs(currentError) / tolerance);
+            pResult = 0;
+            iResult = 0;
+            dResult = 0;
+            fResult = result;
+
             isBusy = false;
         }
 
@@ -104,6 +116,22 @@ public class PID implements ControlAlgorithm {
      */
     public double result() {
         return result;
+    }
+
+    public double pResult(){
+        return pResult;
+    }
+
+    public double iResult(){
+        return iResult;
+    }
+
+    public double dResult(){
+        return dResult;
+    }
+
+    public double fResult(){
+        return fResult;
     }
 
     /**
