@@ -4,31 +4,39 @@ import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.CRServo;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
-import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
-import org.firstinspires.ftc.teamcode.utilities.Notifier;
+import org.firstinspires.ftc.teamcode.hardware.controllers.GravityPID;
+import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 @Config
 public class Feeder extends AxisComponent {
-    public static double kP = 0.005, kI = 0, kD = 0, kF = 0.025, tolerance = 1;
+    public static double kP = 0.005, kI = 0, kD = 0, kF = 0.025;
+    public static double rKP = 0.005, rKI = 0, rKD = 0, rKF = 0.025;
+    public static double gravity = 0.05, tolerance = 1;
 
     private final CRServo servo;
     private final SmartPotentiometer potentiometer;
     public static double restAngle = 0, triggerAngle = 90;
-    public static double angleTolerance = 2;
     public static boolean reverseServo;
     private State state = State.RESTING;
+    private ChainedFuture<?> triggerFuture;
 
     public Feeder(CRServo servo, SmartPotentiometer potentiometer) {
         super(
-                new PID.Builder()
-                        .setKP(() -> kP)
-                        .setKI(() -> kI)
-                        .setKD(() -> kD)
-                        .setKF(() -> kF)
-                        .setTolerance(tolerance)
+                new GravityPID.Builder()
+                        .forwardKP(() -> kP)
+                        .forwardKI(() -> kI)
+                        .forwardKD(() -> kD)
+                        .forwardKF(() -> kF)
+                        .reverseKP(() -> rKP)
+                        .reverseKI(() -> rKI)
+                        .reverseKD(() -> rKD)
+                        .reverseKF(() -> rKF)
+                        .g(() -> gravity)
+                        .tolerance(tolerance)
                         .build()
         );
         potentiometer.reset();
+        setTargetPosition(restAngle);
 
         this.servo = servo;
         this.potentiometer = potentiometer;
@@ -39,19 +47,25 @@ public class Feeder extends AxisComponent {
                 .addData("State", () -> state );
     }
 
+    /**
+     * @return a future that completes with null when the feeder has returned to resting.
+     */
     @SuppressWarnings("UnusedReturnValue")
-    public void trigger() {
+    public ChainedFuture<?> trigger() {
         this.state = State.TRIGGERED;
+        setTargetPosition(triggerAngle);
+        return triggerFuture = new ChainedFuture<>();
     }
 
     public void tick() {
         super.tick();
         switch (state) {
             case RESTING : {
+                setTargetPosition(restAngle);
                 break;
             }
             case TRIGGERED: {
-                if(withinTolerance(triggerAngle, getCurrentPosition(), angleTolerance)){
+                if(!isBusy()){
                     setTargetPosition(restAngle);
                     state = State.RETURNING_TO_REST;
                 } else {
@@ -60,8 +74,9 @@ public class Feeder extends AxisComponent {
                 break;
             }
             case RETURNING_TO_REST: {
-                if(withinTolerance(restAngle, getCurrentPosition(), angleTolerance)){
+                if(!isBusy()){
                     state = State.RESTING;
+                    triggerFuture.complete(null);
                 }
                 break;
             }
@@ -71,7 +86,8 @@ public class Feeder extends AxisComponent {
     @Override
     protected void tickPIDF() {
         controller.calc(getTargetPosition(), getCurrentPosition());
-        this.servo.setPower(controller.result());
+        double power = controller.result();
+        this.servo.setPower(reverseServo ? -power : power);
     }
 
     @Override
