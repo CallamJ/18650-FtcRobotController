@@ -8,52 +8,25 @@ import org.firstinspires.ftc.teamcode.hardware.controllers.GravityPID;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 @Config
-public class Feeder extends AxisComponent {
-    public static double kP = 0.005, kI = 0, kD = 0, kF = 0.05;
-    public static double rKP = 0.005, rKI = 0, rKD = 0, rKF = 0.1;
-    public static double gravity = 0.05, tolerance = 1;
-
+public class Feeder {
     private final CRServo servo;
     private final SmartPotentiometer potentiometer;
-    public static double restAngle = 0, triggerAngle = 90;
+    public static double restAngle = 0, triggerAngle = 90, tolerance = 1;
     public static boolean reverseServo;
     private State state = State.RESTING;
     private ChainedFuture<?> triggerFuture;
+    private double targetPosition = 0;
 
     public Feeder(CRServo servo, SmartPotentiometer potentiometer) {
-        super(
-                new GravityPID.Builder()
-                        .forwardKP(() -> kP)
-                        .forwardKI(() -> kI)
-                        .forwardKD(() -> kD)
-                        .forwardKF(() -> kF)
-                        .reverseKP(() -> rKP)
-                        .reverseKI(() -> rKI)
-                        .reverseKD(() -> rKD)
-                        .reverseKF(() -> rKF)
-                        .g(() -> gravity)
-                        .tolerance(tolerance)
-                        .build()
-        );
         potentiometer.reset();
         setTargetPosition(restAngle);
 
         this.servo = servo;
         this.potentiometer = potentiometer;
 
-        GravityPID pid = (GravityPID) controller;
-
         OpModeCore.getTelemetry().addLine("Feeder")
                 .addData("Current Angle", this::getCurrentPosition)
-                .addData("Target Angle", this::getTargetPosition)
-                .addData("State", () -> state )
-                .addData("P Result", pid::pResult)
-                .addData("I Result", pid::iResult)
-                .addData("D Result", pid::dResult)
-                .addData("F Result", pid::fResult)
-                .addData("G Result", pid::gResult)
-                .addData("Total Result", pid::result);
-
+                .addData("Target Angle", this::getTargetPosition);
     }
 
     /**
@@ -67,7 +40,6 @@ public class Feeder extends AxisComponent {
     }
 
     public void tick() {
-        super.tick();
         switch (state) {
             case RESTING : {
                 setTargetPosition(restAngle);
@@ -90,9 +62,9 @@ public class Feeder extends AxisComponent {
                 break;
             }
         }
+        tickPIDF();
     }
 
-    @Override
     protected void tickPIDF() {
         double power = 0;
         if(state == State.RESTING){
@@ -108,9 +80,16 @@ public class Feeder extends AxisComponent {
         this.servo.setPower(reverseServo ? -power : power);
     }
 
-    @Override
     public double getCurrentPosition() {
         return potentiometer.getAngle();
+    }
+
+    public double getTargetPosition() {
+        return targetPosition;
+    }
+
+    public void setTargetPosition(double targetPosition) {
+        this.targetPosition = targetPosition;
     }
 
     private boolean withinTolerance(double target, double actual, double tolerance) {
