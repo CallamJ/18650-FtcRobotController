@@ -2,11 +2,8 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Gamepad;
-import org.firstinspires.ftc.teamcode.components.Collector;
-import org.firstinspires.ftc.teamcode.components.DriveBase;
-import org.firstinspires.ftc.teamcode.components.Feeder;
-import org.firstinspires.ftc.teamcode.components.Indexer;
+import com.qualcomm.robotcore.hardware.CRServo;
+import org.firstinspires.ftc.teamcode.components.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
@@ -20,6 +17,8 @@ public class MainTeleOp extends TeleOpCore {
     protected static Feeder feeder;
     protected static Collector collector;
     protected static Indexer indexer;
+    protected static Launcher launcher;
+    protected static StorageController storageController;
 
     @Override
     protected void initialize(){
@@ -41,41 +40,42 @@ public class MainTeleOp extends TeleOpCore {
 
         try {
             feeder = new Feeder(
-                    Hardware.getServo("feederServo"),
+                    hardwareMap.get(CRServo.class, "feederServo"),
                     Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+            );
+            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
+            collector = new Collector(Hardware.getMotor("collectorMotor"));
+            storageController = new StorageController(
+                    feeder,
+                    indexer,
+                    collector,
+                    Hardware.getColorSensor("frontColorSensor")
             );
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+            launcher = new Launcher(Hardware.getMotor("launcherMotor"));
         } catch (Exception e) {
-            prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
-        }
-
-        try {
-            collector = new Collector(Hardware.getMotor("collectorMotor"));
-        } catch (Exception e) {
-            prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
+            prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
     }
 
     @Override
     protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
-        //noinspection DuplicatedCode
 
         if(driveBase != null){
             driveBase.moveUsingPower(gamepad1.leftStickX, gamepad1.leftStickY, gamepad1.rightStickX);
         }
 
         if(feeder != null){
-            if(gamepad1.xPressed()){
+            if(gamepad1.yPressed()){
                 feeder.trigger();
             }
         }
 
-        if(indexer != null){
+        if(storageController != null){
             if(gamepad1.leftBumperPressed()){
                 indexer.advanceIndexCounterclockwise();
             }
@@ -84,6 +84,18 @@ public class MainTeleOp extends TeleOpCore {
             }
         }
 
+        if(launcher != null){
+            if(gamepad1.xPressed()){
+                double launcherVelocity = 25000;
+                if(launcher.getTargetVelocity() == launcherVelocity){
+                    launcher.stop();
+                } else {
+                    launcher.setTargetVelocity(launcherVelocity);
+                }
+            }
+        }
+
+        //noinspection DuplicatedCode
         if(collector != null){
             if(gamepad1.aPressed()){
                 double forwardPower = 1;
@@ -95,7 +107,7 @@ public class MainTeleOp extends TeleOpCore {
             }
 
             if(gamepad1.bPressed()){
-                double reversePower = 0.5;
+                double reversePower = -0.5;
                 if(collector.getPower() == reversePower){
                     collector.stop();
                 } else {
@@ -108,11 +120,13 @@ public class MainTeleOp extends TeleOpCore {
     @Override
     public void tick(){
         super.tick();
-        if(feeder != null){
-            feeder.tick();
+
+        if(storageController != null){
+            storageController.tick();
         }
-        if(indexer != null){
-            indexer.tick();
+
+        if(launcher != null){
+            launcher.tick();
         }
     }
 }

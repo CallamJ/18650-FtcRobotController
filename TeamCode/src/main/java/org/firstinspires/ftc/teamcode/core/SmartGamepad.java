@@ -30,6 +30,11 @@ public class SmartGamepad {
         this.leftStickButton = gamepad.left_stick_button;
         this.rightStickButton = gamepad.right_stick_button;
 
+        this.leftStickX = gamepad.left_stick_x;
+        this.leftStickY = gamepad.left_stick_y;
+        this.rightStickX = gamepad.right_stick_x;
+        this.rightStickY = gamepad.right_stick_y;
+
         this.start = gamepad.start;
         this.options = gamepad.options;
         this.guide = gamepad.guide;

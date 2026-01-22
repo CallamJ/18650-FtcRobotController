@@ -75,6 +75,10 @@ public class Indexer extends AxisComponent {
         setTargetIndex(getTargetIndex() - count);
     }
 
+    public short getNormalizedCurrentIndex() {
+        return (short) Math.floorMod(getCurrentIndex(), 3);
+    }
+
     private long degreesToIndex(double degrees){
         return Math.round(degrees / 120);
     }

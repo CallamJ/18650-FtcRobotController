@@ -11,7 +11,7 @@ public class Launcher {
 
     public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02, tolerance = 0.1;
 
-    public static float ticksPerDegree = (8192f/360f);
+    public static float ticksPerDegree = (288f/360f);
 
     private double targetVelocity;
 

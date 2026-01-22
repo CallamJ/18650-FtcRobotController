@@ -18,7 +18,9 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
     public static float RED_HUE = 25.0f;
     public static float YELLOW_HUE = 75.0f;
     public static float BLUE_HUE = 215.0f;
-    public static float MIN_VALUE = 0.2f;
+    public static float GREEN_HUE = 155.0f;
+    public static float PURPLE_HUE = 220.0f;
+    public static float MIN_VALUE = 0.15f;
     public static float MIN_SATURATION = 0.2f;
 
     public static int GAIN = 150;
@@ -87,12 +89,10 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         if (hue < 0) hue += 360;
 
         // Check closeness to each color
-        if (isWithinThreshold(hue, RED_HUE)) {
-            return ScoringElementColor.RED;
-        } else if (isWithinThreshold(hue, YELLOW_HUE)) {
-            return ScoringElementColor.YELLOW;
-        } else if (isWithinThreshold(hue, BLUE_HUE)) {
-            return ScoringElementColor.BLUE;
+        if (isWithinThreshold(hue, PURPLE_HUE)) {
+            return ScoringElementColor.PURPLE;
+        } else if (isWithinThreshold(hue, GREEN_HUE)) {
+            return ScoringElementColor.GREEN;
         } else {
             return ScoringElementColor.NONE;
         }
