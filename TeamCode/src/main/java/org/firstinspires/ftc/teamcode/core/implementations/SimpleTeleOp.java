@@ -110,7 +110,7 @@ public class SimpleTeleOp extends TeleOpCore {
             }
 
             if(gamepad1.bPressed()){
-                double reversePower = 0.5;
+                double reversePower = -0.5;
                 if(collector.getPower() == reversePower){
                     collector.stop();
                 } else {

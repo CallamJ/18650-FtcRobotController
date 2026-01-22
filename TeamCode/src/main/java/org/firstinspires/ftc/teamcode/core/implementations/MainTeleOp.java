@@ -18,6 +18,7 @@ public class MainTeleOp extends TeleOpCore {
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
+    protected static StorageController storageController;
 
     @Override
     protected void initialize(){
@@ -42,14 +43,16 @@ public class MainTeleOp extends TeleOpCore {
                     hardwareMap.get(CRServo.class, "feederServo"),
                     Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
+            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
+            collector = new Collector(Hardware.getMotor("collectorMotor"));
+            storageController = new StorageController(
+                    feeder,
+                    indexer,
+                    collector,
+                    Hardware.getColorSensor("frontColorSensor")
+            );
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
-        }
-
-        try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
-        } catch (Exception e) {
-            prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
@@ -57,17 +60,10 @@ public class MainTeleOp extends TeleOpCore {
         } catch (Exception e) {
             prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
-
-        try {
-            collector = new Collector(Hardware.getMotor("collectorMotor"));
-        } catch (Exception e) {
-            prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
-        }
     }
 
     @Override
     protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
-        //noinspection DuplicatedCode
 
         if(driveBase != null){
             driveBase.moveUsingPower(gamepad1.leftStickX, gamepad1.leftStickY, gamepad1.rightStickX);
@@ -79,7 +75,7 @@ public class MainTeleOp extends TeleOpCore {
             }
         }
 
-        if(indexer != null){
+        if(storageController != null){
             if(gamepad1.leftBumperPressed()){
                 indexer.advanceIndexCounterclockwise();
             }
@@ -90,7 +86,7 @@ public class MainTeleOp extends TeleOpCore {
 
         if(launcher != null){
             if(gamepad1.xPressed()){
-                double launcherVelocity = 15000;
+                double launcherVelocity = 25000;
                 if(launcher.getTargetVelocity() == launcherVelocity){
                     launcher.stop();
                 } else {
@@ -99,6 +95,7 @@ public class MainTeleOp extends TeleOpCore {
             }
         }
 
+        //noinspection DuplicatedCode
         if(collector != null){
             if(gamepad1.aPressed()){
                 double forwardPower = 1;
@@ -110,7 +107,7 @@ public class MainTeleOp extends TeleOpCore {
             }
 
             if(gamepad1.bPressed()){
-                double reversePower = 0.5;
+                double reversePower = -0.5;
                 if(collector.getPower() == reversePower){
                     collector.stop();
                 } else {
@@ -123,12 +120,11 @@ public class MainTeleOp extends TeleOpCore {
     @Override
     public void tick(){
         super.tick();
-        if(feeder != null){
-            feeder.tick();
+
+        if(storageController != null){
+            storageController.tick();
         }
-        if(indexer != null){
-            indexer.tick();
-        }
+
         if(launcher != null){
             launcher.tick();
         }
