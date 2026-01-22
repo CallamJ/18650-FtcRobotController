@@ -1,12 +1,12 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 
-@Config
+@Configurable
 public class Hood {
     public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02, tolerance = 1;
 
