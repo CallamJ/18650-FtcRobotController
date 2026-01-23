@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
@@ -7,8 +8,9 @@ import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 import java.util.Arrays;
 
+@Configurable
 public class StorageController {
-    public static float gain = 100f;
+    public static float gain = 150f;
     private final Feeder feeder;
     private final Indexer indexer;
     private final Collector collector;

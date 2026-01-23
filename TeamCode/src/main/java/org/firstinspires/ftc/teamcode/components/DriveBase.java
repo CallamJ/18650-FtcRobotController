@@ -11,6 +11,8 @@ import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.localization.Localizer;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -27,6 +29,29 @@ public class DriveBase {
     public static float HEADING_VELOCITY_MULTIPLIER = 3f;
 
     private double powerFactor = 1;
+
+    public static DriveMotorPosition zeroIndex = DriveMotorPosition.LEFT_FRONT;
+    public static DriveMotorPosition oneIndex = DriveMotorPosition.RIGHT_FRONT;
+    public static DriveMotorPosition twoIndex = DriveMotorPosition.LEFT_REAR;
+    public static DriveMotorPosition threeIndex = DriveMotorPosition.RIGHT_REAR;
+
+    public enum DriveMotorPosition {
+        LEFT_FRONT, RIGHT_FRONT,
+        LEFT_REAR, RIGHT_REAR
+    }
+    private double mapPosition(DriveMotorPosition position, double lf, double rf, double lr, double rr){
+        switch (position) {
+            case LEFT_FRONT:
+                return lf;
+            case RIGHT_FRONT:
+                return rf;
+            case LEFT_REAR:
+                return lr;
+            case RIGHT_REAR:
+                return rr;
+        }
+        return 0;
+    }
 
     public DriveBase(HardwareMap hardwareMap, DriveBaseMotorConfig config, boolean startFollower) {
 
@@ -48,13 +73,14 @@ public class DriveBase {
             mConstants.leftRearMotorName = config.leftRearName;
             mConstants.rightRearMotorName = config.rightRearName;
 
-            mConstants.leftFrontMotorDirection = config.leftFrontDirection.toMotorDirection();
-            mConstants.rightFrontMotorDirection(config.rightFrontDirection.toMotorDirection());
-            mConstants.leftRearMotorDirection = config.leftRearDirection.toMotorDirection();
-            mConstants.rightRearMotorDirection = config.rightRearDirection.toMotorDirection();
-
+            mConstants.leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD);
+            mConstants.rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD);
+            mConstants.leftRearMotorDirection(DcMotorSimple.Direction.FORWARD);
+            mConstants.rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
 
             mConstants.maxPower(1);
+
+            hardwareMap.get(DcMotorEx.class, config.rightFrontName).setDirection(DcMotorSimple.Direction.REVERSE);
 
             drivetrain = new Mecanum(hardwareMap, mConstants);
 
@@ -86,10 +112,10 @@ public class DriveBase {
         // This ensures all the powers maintain the correct ratio, but only when
         // at least one is out of the range [-1, 1]
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(turn), 1);
-        double leftFront = ((y - x + turn) / denominator) * powerFactor;
-        double leftRear = ((y + x + turn) / denominator) * powerFactor;
-        double rightFront = ((y + x - turn) / denominator) * powerFactor;
-        double rightRear = ((y - x - turn) / denominator) * powerFactor;
+        double leftFront = ((y - x - turn) / denominator) * powerFactor;
+        double leftRear = ((y + x - turn) / denominator) * powerFactor;
+        double rightFront = ((y + x + turn) / denominator) * powerFactor;
+        double rightRear = ((y - x + turn) / denominator) * powerFactor;
 
         setMotorPowers(leftFront, leftRear, rightFront, rightRear);
     }
@@ -106,8 +132,13 @@ public class DriveBase {
         setMotorPowers(0,0,0,0);
     }
 
-    public void setMotorPowers(double lf, double rf, double lr, double rr){
-        drivetrain.runDrive(new double[]{rr, lf, -rf, lf});
+    public void setMotorPowers(double lf, double lr, double rf, double rr){
+        drivetrain.runDrive(new double[]{
+                mapPosition(zeroIndex, lf, lr, rf, rr),
+                mapPosition(oneIndex, lf, lr, rf, rr),
+                mapPosition(twoIndex, lf, lr, rf, rr),
+                mapPosition(threeIndex, lf, lr, rf, rr),
+        });
     }
 
     public void setPowerFactor(double powerFactor){
