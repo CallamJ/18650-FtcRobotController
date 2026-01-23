@@ -33,7 +33,7 @@ public class MainTeleOp extends TeleOpCore {
         configBuilder.rightRear("RRear", Direction.FORWARD);
 
         try {
-            driveBase = new DriveBase(hardwareMap, configBuilder.build());
+            driveBase = new DriveBase(hardwareMap, configBuilder.build(), true);
         } catch (Exception e) {
             prettyTelem.error("Drive base failed to initialize, skipping: " + e.getMessage());
         }
@@ -60,6 +60,11 @@ public class MainTeleOp extends TeleOpCore {
         } catch (Exception e) {
             prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
+
+        prettyTelem.addLine("Localization")
+                .addData("X", () -> driveBase.getPoseSimple().x())
+                .addData("Y", () -> driveBase.getPoseSimple().y())
+                .addData("Heading", () -> driveBase.getPoseSimple().heading());
     }
 
     @Override

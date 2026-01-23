@@ -32,7 +32,7 @@ public class SimpleTeleOp extends TeleOpCore {
         configBuilder.rightRear("RRear", Direction.FORWARD);
 
         try {
-            driveBase = new DriveBase(hardwareMap, configBuilder.build());
+            driveBase = new DriveBase(hardwareMap, configBuilder.build(), false);
         } catch (Exception e) {
             prettyTelem.error("Drive base failed to initialize, skipping: " + e.getMessage());
         }
