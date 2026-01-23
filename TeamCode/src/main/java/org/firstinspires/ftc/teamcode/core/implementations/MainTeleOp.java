@@ -20,6 +20,8 @@ public class MainTeleOp extends TeleOpCore {
     protected static Launcher launcher;
     protected static StorageController storageController;
 
+    public static double launchVelocity = 25000;
+
     @Override
     protected void initialize(){
         //noinspection DuplicatedCode
@@ -82,15 +84,20 @@ public class MainTeleOp extends TeleOpCore {
             if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
             }
+            if(gamepad1.dpadUpPressed()){
+                storageController.loadGreen();
+            }
+            if(gamepad1.dpadRightPressed()){
+                storageController.loadPurple();
+            }
         }
 
         if(launcher != null){
             if(gamepad1.xPressed()){
-                double launcherVelocity = 25000;
-                if(launcher.getTargetVelocity() == launcherVelocity){
+                if(launcher.getTargetVelocity() == launchVelocity){
                     launcher.stop();
                 } else {
-                    launcher.setTargetVelocity(launcherVelocity);
+                    launcher.setTargetVelocity(launchVelocity);
                 }
             }
         }
