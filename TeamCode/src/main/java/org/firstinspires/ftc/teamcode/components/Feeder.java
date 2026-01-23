@@ -91,8 +91,8 @@ public class Feeder {
         this.targetPosition = targetPosition;
     }
 
-    private boolean withinTolerance(double target, double actual, double tolerance) {
-        return Math.abs(target - actual) < tolerance;
+    public State getState() {
+        return state;
     }
 
     public enum State {

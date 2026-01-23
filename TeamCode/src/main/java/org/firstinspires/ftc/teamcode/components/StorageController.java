@@ -4,7 +4,9 @@ import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
+import org.firstinspires.ftc.teamcode.utilities.Await;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
+import org.firstinspires.ftc.teamcode.utilities.TaskScheduler;
 
 import java.util.Arrays;
 
@@ -21,7 +23,7 @@ public class StorageController {
      * Slot 1: The slot that faces back-right when the opmode is started.<br>
      * slot 2: The slot that faces back-left when the opmode is started.<br>
      */
-    private final SlotContent[] indexerContent = new SlotContent[]{SlotContent.OPEN, SlotContent.OPEN, SlotContent.OPEN};
+    private final SlotContent[] indexerContent;
 
     public StorageController(
             Feeder feeder,
@@ -33,15 +35,16 @@ public class StorageController {
         this.indexer = indexer;
         this.collector = collector;
         this.frontSensor = frontSensor;
+        this.indexerContent = new SlotContent[]{SlotContent.OPEN, SlotContent.OPEN, SlotContent.OPEN};
 
         OpModeCore.getTelemetry().addLine("Storage Controller")
                 .addData("Sensor Color", frontSensor::getScoringElementColor)
                 .addData("Sensor Hue", () -> frontSensor.getHSV()[0])
                 .addData("Sensor Saturation", () -> frontSensor.getHSV()[1])
                 .addData("Sensor Value", () -> frontSensor.getHSV()[2])
-                .addData("Front Content", () -> indexerContent[0])
-                .addData("Right Content", () -> indexerContent[1])
-                .addData("Left Content", () -> indexerContent[2]);
+                .addData("Front Content", this::getFrontContent)
+                .addData("Right Content", this::getRightContent)
+                .addData("Left Content", this::getLeftContent);
     }
 
     public void tick(){
@@ -60,11 +63,11 @@ public class StorageController {
         ){
             switch (detectedColor) {
                 case GREEN: {
-                    indexerContent[indexer.getNormalizedCurrentIndex()] = SlotContent.GREEN;
+                    setFrontContent(SlotContent.GREEN);
                     break;
                 }
                 case PURPLE: {
-                    indexerContent[indexer.getNormalizedCurrentIndex()] = SlotContent.PURPLE;
+                    setFrontContent(SlotContent.PURPLE);
                     break;
                 }
             }
@@ -72,7 +75,7 @@ public class StorageController {
     }
 
     public void checkAutomaticAdvance(){
-        if(getLeftContent() == SlotContent.OPEN && getFrontContent() != SlotContent.OPEN){
+        if(getLeftContent() == SlotContent.OPEN && getFrontContent() != SlotContent.OPEN && indexer.getTargetIndex() == indexer.getCurrentIndex()){
             advanceIndexerClockwise();
         }
     }
@@ -100,11 +103,25 @@ public class StorageController {
     }
 
     public SlotContent getRightContent(){
-        return indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3];
+        return indexerContent[(indexer.getNormalizedCurrentIndex() + 2) % 3];
     }
 
     public SlotContent getLeftContent(){
-        return indexerContent[(indexer.getNormalizedCurrentIndex() + 2) % 3];
+        return indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3];
+    }
+
+    // STORAGE STATE MUTATORS:
+
+    public void setFrontContent(SlotContent content){
+        indexerContent[indexer.getNormalizedCurrentIndex()] = content;
+    }
+
+    public void setRightContent(SlotContent content){
+        indexerContent[(indexer.getNormalizedCurrentIndex() + 2) % 3] = content;
+    }
+
+    public void setLeftContent(SlotContent content){
+        indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3] = content;
     }
 
     public SlotContent[] getIndexerContent() {
@@ -144,7 +161,59 @@ public class StorageController {
     // STORAGE CONTROL:
 
     public ChainedFuture<Object> loadGreen(){
-        return new ChainedFuture<>();
+        ChainedFuture<Object> future = new ChainedFuture<>();
+
+        if(!hasGreen()){
+            future.complete(null);
+            return future;
+        }
+
+        TaskScheduler.getDefaultInstance().runAsync(() -> {
+            if(getLeftContent() == SlotContent.GREEN){
+                triggerAndComplete(future);
+            } else if(getRightContent() == SlotContent.GREEN){
+                advanceIndexerClockwise();
+                indexer.noLongerBusyNotifier.await();
+                triggerAndComplete(future);
+            } else if(getFrontContent() == SlotContent.GREEN){
+                advanceIndexerCounterclockwise();
+                indexer.noLongerBusyNotifier.await();
+                triggerAndComplete(future);
+            }
+        });
+
+        return future;
+    }
+    public ChainedFuture<Object> loadPurple(){
+        ChainedFuture<Object> future = new ChainedFuture<>();
+
+        if(!hasPurple()){
+            future.complete(null);
+            return future;
+        }
+
+        TaskScheduler.getDefaultInstance().runAsync(() -> {
+            if(getLeftContent() == SlotContent.PURPLE){
+                triggerAndComplete(future);
+            } else if(getRightContent() == SlotContent.PURPLE){
+                advanceIndexerClockwise();
+                indexer.noLongerBusyNotifier.await();
+                triggerAndComplete(future);
+            } else if(getFrontContent() == SlotContent.PURPLE){
+                advanceIndexerCounterclockwise();
+                indexer.noLongerBusyNotifier.await();
+                triggerAndComplete(future);
+            }
+        });
+
+        return future;
+    }
+
+    private void triggerAndComplete(ChainedFuture<Object> future){
+        feeder.trigger().thenRun(() -> {
+            setLeftContent(SlotContent.OPEN);
+            future.complete(null);
+        });
     }
 
     public enum IndexerState {

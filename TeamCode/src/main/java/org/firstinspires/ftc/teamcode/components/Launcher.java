@@ -1,15 +1,17 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.acmerobotics.dashboard.config.Config;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 
+@Config
 public class Launcher {
     private final SmartMotor motor;
 
     private final ControlAlgorithm controller;
 
-    public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02, tolerance = 0.1;
+    public static double kP = 0.001, kI = 0, kD = 0.005, kF = 0.02, tolerance = 10;
 
     public static float ticksPerDegree = (288f/360f);
 
