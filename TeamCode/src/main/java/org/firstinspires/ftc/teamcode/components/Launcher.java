@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode.components;
 
+import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 
+@Configurable
 public class Launcher {
     private final SmartMotor motor;
 
@@ -24,6 +27,11 @@ public class Launcher {
                 .setKF(() -> kF)
                 .setTolerance(tolerance)
                 .build();
+
+        OpModeCore.getTelemetry().addLine("Launcher")
+                .addData("Current Velocity", this::getVelocity)
+                .addData("Target Velocity", this::getTargetVelocity)
+                .addData("Power", this::getPower);
     }
 
     public void tick(){

@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.drive;
 
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 public class DriveBaseMotorConfig {
@@ -64,5 +67,29 @@ public class DriveBaseMotorConfig {
         public DriveBaseMotorConfig build(){
             return new DriveBaseMotorConfig(this);
         }
+    }
+
+    public DcMotorEx configAndFetchLeftFront(HardwareMap hardwareMap){
+        DcMotorEx motor = hardwareMap.get(DcMotorEx.class, leftFrontName);
+        motor.setDirection(this.leftFrontDirection.toMotorDirection());
+        return motor;
+    }
+
+    public DcMotorEx configAndFetchRightFront(HardwareMap hardwareMap){
+        DcMotorEx motor = hardwareMap.get(DcMotorEx.class, rightFrontName);
+        motor.setDirection(this.rightFrontDirection.toMotorDirection());
+        return motor;
+    }
+
+    public DcMotorEx configAndFetchLeftRear(HardwareMap hardwareMap){
+        DcMotorEx motor = hardwareMap.get(DcMotorEx.class, leftRearName);
+        motor.setDirection(this.leftRearDirection.toMotorDirection());
+        return motor;
+    }
+
+    public DcMotorEx configAndFetchRightRear(HardwareMap hardwareMap){
+        DcMotorEx motor = hardwareMap.get(DcMotorEx.class, rightRearName);
+        motor.setDirection(this.rightRearDirection.toMotorDirection());
+        return motor;
     }
 }

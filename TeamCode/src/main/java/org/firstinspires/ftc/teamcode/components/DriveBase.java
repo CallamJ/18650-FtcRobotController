@@ -17,12 +17,13 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
+import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
 public class DriveBase {
 
-    private Drivetrain drivetrain;
+    private final Drivetrain drivetrain;
     private final Localizer localizer;
     private Follower follower;
     public static float TRANSLATIONAL_VELOCITY_MULTIPLIER = 40f;
@@ -54,46 +55,18 @@ public class DriveBase {
     }
 
     public DriveBase(HardwareMap hardwareMap, DriveBaseMotorConfig config, boolean startFollower) {
-
-        PinpointConstants pinpointConstants = new PinpointConstants()
-                .hardwareMapName("pinpoint")
-                .strafePodX(-7.5)
-                .forwardPodY(4.5)
-                .distanceUnit(DistanceUnit.INCH)
-                .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-                .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
-                .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
-        localizer = new PinpointLocalizer(hardwareMap, pinpointConstants);
-
         if(startFollower){
-            MecanumConstants mConstants = new MecanumConstants();
+            follower = Constants.createConfiguredFollower(hardwareMap, config);
+            localizer = follower.getPoseTracker().getLocalizer();
+            drivetrain = follower.getDrivetrain();
+        } else {
+            localizer = new PinpointLocalizer(hardwareMap, Constants.pinpointConstants);
+            drivetrain = new Mecanum(hardwareMap, Constants.mecanumConstants);
 
-            mConstants.leftFrontMotorName = config.leftFrontName;
-            mConstants.rightFrontMotorName = config.rightFrontName;
-            mConstants.leftRearMotorName = config.leftRearName;
-            mConstants.rightRearMotorName = config.rightRearName;
-
-            mConstants.leftFrontMotorDirection(DcMotorSimple.Direction.FORWARD);
-            mConstants.rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD);
-            mConstants.leftRearMotorDirection(DcMotorSimple.Direction.FORWARD);
-            mConstants.rightRearMotorDirection(DcMotorSimple.Direction.FORWARD);
-
-            mConstants.maxPower(1);
-
-            hardwareMap.get(DcMotorEx.class, config.rightFrontName).setDirection(DcMotorSimple.Direction.REVERSE);
-
-            drivetrain = new Mecanum(hardwareMap, mConstants);
-
-            FollowerConstants followerConstants = new FollowerConstants()
-                    .mass(10.25);
-
-
-            //todo: tune follower constants
-
-            follower = new FollowerBuilder(followerConstants, hardwareMap)
-                    .pinpointLocalizer(pinpointConstants)
-                    .mecanumDrivetrain(mConstants)
-                    .build();
+            config.configAndFetchLeftFront(hardwareMap);
+            config.configAndFetchLeftRear(hardwareMap);
+            config.configAndFetchRightFront(hardwareMap);
+            config.configAndFetchRightRear(hardwareMap);
         }
     }
 
@@ -104,7 +77,7 @@ public class DriveBase {
      * @param turn the power to turn with. Positive -> turn right, Negative -> turn left
      */
     public void moveUsingPP(double x, double y, double turn){
-        //todo: IMPLEMENT
+        follower.setTeleOpDrive(x, y, turn);
     }
 
     public void moveUsingPower(double x, double y, double turn){
