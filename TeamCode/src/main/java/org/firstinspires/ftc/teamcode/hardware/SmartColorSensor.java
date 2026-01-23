@@ -7,30 +7,19 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.jetbrains.annotations.NotNull;
 
 @Configurable
 public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching {
-    //configuration
-    public static float HUE_THRESHOLD = 20.0f;
-    public static float RED_HUE = 25.0f;
-    public static float YELLOW_HUE = 75.0f;
-    public static float BLUE_HUE = 215.0f;
-    public static float GREEN_HUE = 155.0f;
-    public static float PURPLE_HUE = 220.0f;
-    public static float MIN_VALUE = 0.15f;
-    public static float MIN_SATURATION = 0.2f;
-
-    public static int GAIN = 150;
 
     NormalizedColorSensor colorSensor;
-
     HardwareCache<NormalizedRGBA> colorCache;
 
     SmartColorSensor(NormalizedColorSensor colorSensor, String configName) {
         super(configName);
         this.colorSensor = colorSensor;
         colorCache = new HardwareCache<>(colorSensor::getNormalizedColors);
-        colorSensor.setGain(GAIN);
+        colorSensor.setGain(ColorMatchConfig.GAIN);
     }
 
     /**
@@ -66,39 +55,75 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
 
     /**
      * Reads the currently detected color and returns a scoring element color or null if no scoring element color was detected.
+     * Uses the configurable color matching system from ColorMatchConfig.
      *
      * @return the approximate color detected by the sensor. If no scoring element color is detected returns ScoringElementColor.NONE.
      */
     public @NonNull ScoringElementColor getScoringElementColor() {
         float[] hsv = getHSV();
-
         float hue = hsv[0];
-        final float saturation = hsv[1];
-        final float value = hsv[2];
+        float saturation = hsv[1];
+        float value = hsv[2];
 
-        // Ensure valid saturation and value
-        if (saturation < MIN_SATURATION || value < MIN_VALUE) {
-            return ScoringElementColor.NONE; // Very low saturation or brightness, return None
+        // Ensure minimum valid saturation and value (not black/white/gray)
+        if (saturation < ColorMatchConfig.MIN_SATURATION || value < ColorMatchConfig.MIN_VALUE) {
+            return ScoringElementColor.NONE;
         }
+
+        // Normalize hue to 0-360 range
+        hue = hue % 360;
+        if (hue < 0) hue += 360;
+
+        // Find the best matching preset color
+        ColorMatchConfig.ColorPreset bestMatch = null;
+        float bestConfidence = 0.0f;
+
+        for (ColorMatchConfig.ColorPreset preset : ColorMatchConfig.ACTIVE_PRESETS) {
+            if (preset.matches(hue, saturation, value)) {
+                float confidence = preset.getMatchConfidence(hue, saturation, value);
+                if (confidence > bestConfidence) {
+                    bestConfidence = confidence;
+                    bestMatch = preset;
+                }
+            }
+        }
+
+        return bestMatch != null ? bestMatch.color : ScoringElementColor.NONE;
+    }
+
+    /**
+     * Gets detailed color matching information for debugging and tuning.
+     *
+     * @return ColorMatchResult containing the detected color, HSV values, and match confidence
+     */
+    public ColorMatchResult getColorMatchResult() {
+        float[] hsv = getHSV();
+        float hue = hsv[0];
+        float saturation = hsv[1];
+        float value = hsv[2];
 
         // Normalize hue
         hue = hue % 360;
         if (hue < 0) hue += 360;
 
-        // Check closeness to each color
-        if (isWithinThreshold(hue, PURPLE_HUE)) {
-            return ScoringElementColor.PURPLE;
-        } else if (isWithinThreshold(hue, GREEN_HUE)) {
-            return ScoringElementColor.GREEN;
-        } else {
-            return ScoringElementColor.NONE;
+        // Find the best matching preset color
+        ColorMatchConfig.ColorPreset bestMatch = null;
+        float bestConfidence = 0.0f;
+
+        for (ColorMatchConfig.ColorPreset preset : ColorMatchConfig.ACTIVE_PRESETS) {
+            float confidence = preset.getMatchConfidence(hue, saturation, value);
+            if (confidence > bestConfidence) {
+                bestConfidence = confidence;
+                bestMatch = preset;
+            }
         }
-    }
 
-    private static boolean isWithinThreshold(float hue, float targetHue) {
-        return Math.abs(hue - targetHue) <= HUE_THRESHOLD;
-    }
+        ScoringElementColor detectedColor = (bestMatch != null && bestConfidence > 0)
+                ? bestMatch.color
+                : ScoringElementColor.NONE;
 
+        return new ColorMatchResult(detectedColor, hue, saturation, value, bestConfidence);
+    }
 
     public void setGain(float gain){
         if(gain <= 0)
@@ -210,5 +235,32 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
     @Override
     public Strategy getStrategy() {
         return colorCache.getStrategy();
+    }
+
+    /**
+     * Data class containing detailed color matching results.
+     */
+    public static class ColorMatchResult {
+        public final ScoringElementColor detectedColor;
+        public final float hue;
+        public final float saturation;
+        public final float value;
+        public final float confidence;
+
+        public ColorMatchResult(ScoringElementColor detectedColor, float hue, float saturation, float value, float confidence) {
+            this.detectedColor = detectedColor;
+            this.hue = hue;
+            this.saturation = saturation;
+            this.value = value;
+            this.confidence = confidence;
+        }
+
+        @NotNull
+        @NonNull
+        @Override
+        public String toString() {
+            return String.format("Color: %s, HSV: (%.1f, %.2f, %.2f), Confidence: %.2f",
+                    detectedColor, hue, saturation, value, confidence);
+        }
     }
 }

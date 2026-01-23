@@ -4,7 +4,6 @@ import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
-import org.firstinspires.ftc.teamcode.utilities.Await;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 import org.firstinspires.ftc.teamcode.utilities.TaskScheduler;
 
@@ -12,7 +11,6 @@ import java.util.Arrays;
 
 @Configurable
 public class StorageController {
-    public static float gain = 150f;
     private final Feeder feeder;
     private final Indexer indexer;
     private final Collector collector;
@@ -50,7 +48,6 @@ public class StorageController {
     public void tick(){
         feeder.tick();
         indexer.tick();
-        frontSensor.setGain(gain);
         updateIndexerContent();
         checkAutomaticAdvance();
     }
