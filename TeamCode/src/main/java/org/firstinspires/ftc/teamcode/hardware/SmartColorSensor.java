@@ -1,14 +1,11 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
 import android.graphics.Color;
-
 import androidx.annotation.NonNull;
-
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
-
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @Configurable

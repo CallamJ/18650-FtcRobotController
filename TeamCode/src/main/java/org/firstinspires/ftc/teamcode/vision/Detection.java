@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.vision;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 

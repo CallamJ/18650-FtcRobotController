@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import androidx.annotation.NonNull;
-
 import org.firstinspires.ftc.robotcore.external.Func;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 

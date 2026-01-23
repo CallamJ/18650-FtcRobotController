@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
 import com.qualcomm.robotcore.hardware.AnalogInput;
-
 import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 
 /**

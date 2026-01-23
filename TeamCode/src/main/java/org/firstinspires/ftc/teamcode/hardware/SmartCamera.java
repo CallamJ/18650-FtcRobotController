@@ -2,9 +2,7 @@ package org.firstinspires.ftc.teamcode.hardware;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
-
 import android.util.Size;
-
 import org.firstinspires.ftc.robotcore.external.function.Consumer;
 import org.firstinspires.ftc.robotcore.external.function.Continuation;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.BuiltinCameraName;
