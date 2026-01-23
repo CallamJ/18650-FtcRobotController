@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.acmerobotics.dashboard.config.Config;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 
-@Config
 public class Launcher {
     private final SmartMotor motor;
 
