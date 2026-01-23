@@ -20,7 +20,7 @@ public class MainTeleOp extends TeleOpCore {
     protected static Launcher launcher;
     protected static StorageController storageController;
 
-    public static double launchVelocity = 25000;
+    public static double launchVelocity = 2500;
 
     @Override
     protected void initialize(){

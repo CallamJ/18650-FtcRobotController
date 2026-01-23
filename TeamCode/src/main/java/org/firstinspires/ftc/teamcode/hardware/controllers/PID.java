@@ -18,8 +18,8 @@ public class PID implements ControlAlgorithm {
     protected double integral, lastError, tolerance, minimum, result;
     protected double pResult, iResult, dResult, fResult;
     protected final ElapsedTime timer = new ElapsedTime();
-    private boolean isBusy = true;
-    private Direction direction;
+    boolean isBusy = true;
+    protected Direction direction;
     Notifier noLongerBusyNotifier = new Notifier();
 
     protected final DoubleSupplier kP, kI, kD, kF;

@@ -1,18 +1,20 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
+import org.firstinspires.ftc.teamcode.hardware.controllers.VelocityPID;
 
 @Configurable
 public class Launcher {
     private final SmartMotor motor;
 
-    private final ControlAlgorithm controller;
+    private final VelocityPID controller;
 
-    public static double kP = 0.001, kI = 0, kD = 0.005, kF = 0.02, tolerance = 10;
+    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.001, tolerance = 30;
 
     public static float ticksPerDegree = (288f/360f);
 
@@ -20,7 +22,8 @@ public class Launcher {
 
     public Launcher(SmartMotor motor) {
         this.motor = motor;
-        this.controller = new PID.Builder()
+        this.motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
+        this.controller = new VelocityPID.Builder()
                 .setKP(() -> kP)
                 .setKI(() -> kI)
                 .setKD(() -> kD)
@@ -31,11 +34,12 @@ public class Launcher {
         OpModeCore.getTelemetry().addLine("Launcher")
                 .addData("Current Velocity", this::getVelocity)
                 .addData("Target Velocity", this::getTargetVelocity)
-                .addData("Power", this::getPower);
+                .addData("Power", this::getPower)
+                .addData("PID Result", controller::result);
     }
 
     public void tick(){
-        motor.setPower(controller.calc(targetVelocity, getVelocity()));
+        motor.setPower(controller.calcWithVelocity(targetVelocity, getVelocity()));
     }
 
     public void setTargetVelocity(double targetVelocity) {
