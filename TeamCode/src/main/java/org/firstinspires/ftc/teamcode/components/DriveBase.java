@@ -94,6 +94,7 @@ public class DriveBase {
     }
 
     public Pose getPoseSimple(){
+        localizer.update();
         com.pedropathing.geometry.Pose pose = localizer.getPose();
         return new Pose(pose.getX(), pose.getY(),pose.getHeading());
     }
