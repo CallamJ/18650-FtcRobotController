@@ -14,20 +14,13 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
     SmartMotor(DcMotorEx motor, String name){
         super(name);
         this.motor = motor;
-        this.encoder = new SmartEncoder(motor, name);
+        this.encoder = new SmartEncoder(motor, name, false);
     }
 
     SmartMotor(DcMotorEx motor, String name, boolean hasExternalEncoder){
         super(name);
-        if(hasExternalEncoder){
-            this.motor = motor;
-            //TODO: This is a patch to make this work without RR, find out how to wrap revcoders ourselves
-            //this.encoder = new SmartEncoder(new Encoder(motor), name);
-            this.encoder = new SmartEncoder(motor, name);
-        } else {
-            this.motor = motor;
-            this.encoder = new SmartEncoder(motor, name);
-        }
+        this.motor = motor;
+        this.encoder = new SmartEncoder(motor, name, hasExternalEncoder);
     }
 
     public DcMotor getMotor(){

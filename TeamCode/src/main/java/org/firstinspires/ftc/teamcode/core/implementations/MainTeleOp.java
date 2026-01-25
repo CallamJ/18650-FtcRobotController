@@ -45,7 +45,7 @@ public class MainTeleOp extends TeleOpCore {
                     hardwareMap.get(CRServo.class, "feederServo"),
                     Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
-            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
+            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
             collector = new Collector(Hardware.getMotor("collectorMotor"));
             storageController = new StorageController(
                     feeder,

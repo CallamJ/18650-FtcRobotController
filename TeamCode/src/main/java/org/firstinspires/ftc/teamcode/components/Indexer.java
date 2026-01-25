@@ -4,12 +4,13 @@ import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
+import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Configurable
 public class Indexer extends AxisComponent {
 
     public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02, tolerance = 2;
-    public static float ticksPerDegree = 288f/360f;
+    public static float ticksPerDegree = 8192f/360f;
 
     private final SmartMotor motor;
 
@@ -25,6 +26,8 @@ public class Indexer extends AxisComponent {
                 .build()
         );
         this.motor = motor;
+
+        motor.getEncoder().setDirection(Direction.REVERSE);
 
         motor.getEncoder().reset();
 
