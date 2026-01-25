@@ -5,9 +5,8 @@ import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
-import org.firstinspires.ftc.teamcode.utilities.TaskScheduler;
 
-import java.util.Arrays;
+import java.util.*;
 
 @Configurable
 public class StorageController {
@@ -15,6 +14,9 @@ public class StorageController {
     private final Indexer indexer;
     private final Collector collector;
     private final SmartColorSensor frontSensor;
+    private final Queue<Task> taskQueue;
+    private Task activeTask;
+    private State state;
 
     /**
      * Slot 0: The slot that faces forward when the opmode is started.<br>
@@ -34,22 +36,61 @@ public class StorageController {
         this.collector = collector;
         this.frontSensor = frontSensor;
         this.indexerContent = new SlotContent[]{SlotContent.OPEN, SlotContent.OPEN, SlotContent.OPEN};
+        this.taskQueue = new ArrayDeque<>();
+        this.state = State.RESTING;
 
         OpModeCore.getTelemetry().addLine("Storage Controller")
-                .addData("Sensor Color", frontSensor::getScoringElementColor)
-                .addData("Sensor Hue", () -> frontSensor.getHSV()[0])
-                .addData("Sensor Saturation", () -> frontSensor.getHSV()[1])
-                .addData("Sensor Value", () -> frontSensor.getHSV()[2])
+                .addData("State", () -> this.state.toString())
                 .addData("Front Content", this::getFrontContent)
                 .addData("Right Content", this::getRightContent)
                 .addData("Left Content", this::getLeftContent);
+        OpModeCore.getTelemetry().addLine("Color Sensor")
+                .addData("Sensor Color", frontSensor::getScoringElementColor)
+                .addData("Sensor Hue", () -> frontSensor.getHSV()[0])
+                .addData("Sensor Saturation", () -> frontSensor.getHSV()[1])
+                .addData("Sensor Value", () -> frontSensor.getHSV()[2]);
     }
 
     public void tick(){
         feeder.tick();
         indexer.tick();
-        updateIndexerContent();
-        checkAutomaticAdvance();
+        switch(state){
+            case RESTING: {
+                updateIndexerContent();
+                checkTasks();
+
+                // if we aren't busy and the collection slot is full, make room.
+                if(taskQueue.isEmpty()){
+                    if(getFrontContent() != SlotContent.OPEN && !isFull()){
+                        taskQueue.add(Task.READY_FOR_COLLECTION);
+                    }
+                }
+
+                break;
+            }
+            case BUMPING: {
+                if(!indexer.isBusy()){
+                    this.state = State.RESTING;
+                }
+                break;
+            }
+            case READYING_GREEN:
+            case READYING_PURPLE: {
+                if(!indexer.isBusy()){
+                    feeder.trigger();
+                    this.state = State.LOADING_GREEN;
+                }
+                break;
+            }
+            case LOADING_GREEN:
+            case LOADING_PURPLE: {
+                if(feeder.getState() == Feeder.State.RESTING){
+                    this.state = State.RESTING;
+                }
+                break;
+            }
+
+        }
     }
 
     public void updateIndexerContent(){
@@ -71,26 +112,88 @@ public class StorageController {
         }
     }
 
-    public void checkAutomaticAdvance(){
-        if(getLeftContent() == SlotContent.OPEN && getFrontContent() != SlotContent.OPEN && indexer.getTargetIndex() == indexer.getCurrentIndex()){
-            advanceIndexerClockwise();
+    public void checkTasks(){
+        if (activeTask == null && !taskQueue.isEmpty()) {
+            activeTask = taskQueue.poll(); // this removes the oldest pending task
+        }
+
+        if(activeTask == null) return;
+
+        switch (activeTask) {
+            // check we actually have a purple to load
+            case LOAD_PURPLE: {
+                if(hasPurple()){
+                    // if we don't have to move the indexer we can skip straight to loading phase
+                    this.state = readyContentToLeft(SlotContent.PURPLE) ? State.READYING_PURPLE : State.LOADING_PURPLE;
+                }
+                break;
+            }
+            case LOAD_GREEN: {
+                // check we actually have a green to load
+                if(hasGreen()){
+                    // if we don't have to move the indexer we can skip straight to loading phase
+                    this.state = readyContentToLeft(SlotContent.GREEN) ? State.READYING_GREEN : State.LOADING_GREEN;
+                }
+                break;
+            }
+            case READY_FOR_COLLECTION: {
+                // check if we have space to make room for a new artifact
+                if(!isFull()){
+                    // if front is already open, just skip to resting
+                    this.state = readyContentToFront(SlotContent.OPEN) ? State.BUMPING : State.RESTING;
+                }
+                break;
+            }
+            case COUNTERCLOCKWISE_BUMP: {
+                indexer.advanceIndexCounterclockwise();
+                this.state = State.BUMPING;
+                break;
+            }
+            case CLOCKWISE_BUMP: {
+                indexer.advanceIndexClockwise();
+                this.state = State.BUMPING;
+                break;
+            }
         }
     }
 
-    public void advanceIndexerClockwise(){
-        advanceIndexerClockwise(1);
+    private boolean readyContentToFront(SlotContent target){
+        if(getFrontContent() == target){
+            return false;
+        } else if(getLeftContent() == target){
+            indexer.advanceIndexClockwise();
+            return true;
+        } else if(getRightContent() == target){
+            indexer.advanceIndexCounterclockwise();
+            return true;
+        }
+        return false;
     }
 
-    public void advanceIndexerClockwise(int count){
-        indexer.setTargetIndex(indexer.getCurrentIndex() + count);
+    private boolean readyContentToLeft(SlotContent target){
+        if(getLeftContent() == target){
+            return false;
+        } else if(getRightContent() == target){
+            indexer.advanceIndexClockwise();
+            return true;
+        } else if(getFrontContent() == target){
+            indexer.advanceIndexCounterclockwise();
+            return true;
+        }
+        return false;
     }
 
-    public void advanceIndexerCounterclockwise(){
-        advanceIndexerCounterclockwise(1);
-    }
-
-    public void advanceIndexerCounterclockwise(int count){
-        indexer.setTargetIndex(indexer.getCurrentIndex() - count);
+    private boolean readyContentToRight(SlotContent target){
+        if(getRightContent() == target){
+            return false;
+        } else if(getFrontContent() == target){
+            indexer.advanceIndexClockwise();
+            return true;
+        } else if(getLeftContent() == target){
+            indexer.advanceIndexCounterclockwise();
+            return true;
+        }
+        return false;
     }
 
     // STORAGE STATE ACCESSORS:
@@ -105,24 +208,6 @@ public class StorageController {
 
     public SlotContent getLeftContent(){
         return indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3];
-    }
-
-    // STORAGE STATE MUTATORS:
-
-    public void setFrontContent(SlotContent content){
-        indexerContent[indexer.getNormalizedCurrentIndex()] = content;
-    }
-
-    public void setRightContent(SlotContent content){
-        indexerContent[(indexer.getNormalizedCurrentIndex() + 2) % 3] = content;
-    }
-
-    public void setLeftContent(SlotContent content){
-        indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3] = content;
-    }
-
-    public SlotContent[] getIndexerContent() {
-        return indexerContent;
     }
 
     public boolean hasGreen(){
@@ -149,77 +234,63 @@ public class StorageController {
         return (int) Arrays.stream(indexerContent).filter(slotContent -> slotContent == SlotContent.OPEN).count();
     }
 
+    // STORAGE STATE MUTATORS:
+
+    public void setFrontContent(SlotContent content){
+        indexerContent[indexer.getNormalizedCurrentIndex()] = content;
+    }
+
+    public void setRightContent(SlotContent content){
+        indexerContent[(indexer.getNormalizedCurrentIndex() + 2) % 3] = content;
+    }
+
+    public void setLeftContent(SlotContent content){
+        indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3] = content;
+    }
+
     public enum SlotContent {
         OPEN,
         GREEN,
         PURPLE
     }
 
-    // STORAGE CONTROL:
+    // COMMAND CONTROL:
+    public void clearCommandQueue(){
+        taskQueue.clear();
+    }
 
     public ChainedFuture<Object> loadGreen(){
         ChainedFuture<Object> future = new ChainedFuture<>();
 
-        if(!hasGreen()){
-            future.complete(null);
-            return future;
-        }
-
-        TaskScheduler.getDefaultInstance().runAsync(() -> {
-            if(getLeftContent() == SlotContent.GREEN){
-                triggerAndComplete(future);
-            } else if(getRightContent() == SlotContent.GREEN){
-                advanceIndexerClockwise();
-                indexer.noLongerBusyNotifier.await();
-                triggerAndComplete(future);
-            } else if(getFrontContent() == SlotContent.GREEN){
-                advanceIndexerCounterclockwise();
-                indexer.noLongerBusyNotifier.await();
-                triggerAndComplete(future);
-            }
-        });
+        taskQueue.add(Task.LOAD_GREEN);
 
         return future;
     }
     public ChainedFuture<Object> loadPurple(){
         ChainedFuture<Object> future = new ChainedFuture<>();
 
-        if(!hasPurple()){
-            future.complete(null);
-            return future;
-        }
-
-        TaskScheduler.getDefaultInstance().runAsync(() -> {
-            if(getLeftContent() == SlotContent.PURPLE){
-                triggerAndComplete(future);
-            } else if(getRightContent() == SlotContent.PURPLE){
-                advanceIndexerClockwise();
-                indexer.noLongerBusyNotifier.await();
-                triggerAndComplete(future);
-            } else if(getFrontContent() == SlotContent.PURPLE){
-                advanceIndexerCounterclockwise();
-                indexer.noLongerBusyNotifier.await();
-                triggerAndComplete(future);
-            }
-        });
+        taskQueue.add(Task.LOAD_PURPLE);
 
         return future;
     }
 
-    private void triggerAndComplete(ChainedFuture<Object> future){
-        feeder.trigger().thenRun(() -> {
-            setLeftContent(SlotContent.OPEN);
-            future.complete(null);
-        });
-    }
-
-    public enum IndexerState {
-        INACTIVE,
+    /**
+     * External task given to the storage controller to complete.
+     */
+    public enum Task {
+        LOAD_PURPLE,
+        LOAD_GREEN,
+        READY_FOR_COLLECTION,
         COUNTERCLOCKWISE_BUMP,
         CLOCKWISE_BUMP,
+    }
+
+    public enum State {
+        RESTING,
+        BUMPING,
         READYING_GREEN,
-        READYING_PURPLE,
         LOADING_GREEN,
-        LOADING_PURPLE
+        READYING_PURPLE,
+        LOADING_PURPLE,
     }
 }
