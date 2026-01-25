@@ -8,7 +8,7 @@ public class Collector {
 
     public Collector(SmartMotor motor) {
         this.motor = motor;
-        motor.setDirection(DcMotorSimple.Direction.REVERSE);
+        motor.setDirection(DcMotorSimple.Direction.FORWARD);
     }
 
     public void setPower(double power) {

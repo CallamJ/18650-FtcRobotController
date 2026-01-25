@@ -5,6 +5,7 @@ import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
+import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
 
 import java.util.*;
 
@@ -39,11 +40,13 @@ public class StorageController {
         this.taskQueue = new ArrayDeque<>();
         this.state = State.RESTING;
 
-        OpModeCore.getTelemetry().addLine("Storage Controller")
+        PrettyTelemetry.Item item = OpModeCore.getTelemetry().addLine("Storage Controller")
                 .addData("State", () -> this.state.toString())
                 .addData("Front Content", this::getFrontContent)
                 .addData("Right Content", this::getRightContent)
-                .addData("Left Content", this::getLeftContent);
+                .addData("Left Content", this::getLeftContent)
+                .addData("Task Queue", taskQueue::toString);
+
         OpModeCore.getTelemetry().addLine("Color Sensor")
                 .addData("Sensor Color", frontSensor::getScoringElementColor)
                 .addData("Sensor Hue", () -> frontSensor.getHSV()[0])
@@ -56,11 +59,12 @@ public class StorageController {
         indexer.tick();
         switch(state){
             case RESTING: {
+                activeTask = null;
                 updateIndexerContent();
                 checkTasks();
 
                 // if we aren't busy and the collection slot is full, make room.
-                if(taskQueue.isEmpty()){
+                if(taskQueue.isEmpty() && activeTask == null){
                     if(getFrontContent() != SlotContent.OPEN && !isFull()){
                         taskQueue.add(Task.READY_FOR_COLLECTION);
                     }
@@ -86,6 +90,7 @@ public class StorageController {
             case LOADING_PURPLE: {
                 if(feeder.getState() == Feeder.State.RESTING){
                     this.state = State.RESTING;
+                    setLeftContent(SlotContent.OPEN);
                 }
                 break;
             }
@@ -95,26 +100,24 @@ public class StorageController {
 
     public void updateIndexerContent(){
         ScoringElementColor detectedColor = frontSensor.getScoringElementColor();
-        if(
-                detectedColor != ScoringElementColor.NONE &&
-                indexer.getTargetIndex() == indexer.getCurrentIndex()
-        ){
-            switch (detectedColor) {
-                case GREEN: {
-                    setFrontContent(SlotContent.GREEN);
-                    break;
-                }
-                case PURPLE: {
-                    setFrontContent(SlotContent.PURPLE);
-                    break;
-                }
+        switch (detectedColor) {
+            case GREEN: {
+                setFrontContent(SlotContent.GREEN);
+                break;
+            }
+            case PURPLE: {
+                setFrontContent(SlotContent.PURPLE);
+                break;
+            }
+            case NONE: {
+                setFrontContent(SlotContent.OPEN);
             }
         }
     }
 
     public void checkTasks(){
         if (activeTask == null && !taskQueue.isEmpty()) {
-            activeTask = taskQueue.poll(); // this removes the oldest pending task
+            activeTask = taskQueue.poll(); // this grabs removes the oldest pending task
         }
 
         if(activeTask == null) return;
@@ -125,6 +128,9 @@ public class StorageController {
                 if(hasPurple()){
                     // if we don't have to move the indexer we can skip straight to loading phase
                     this.state = readyContentToLeft(SlotContent.PURPLE) ? State.READYING_PURPLE : State.LOADING_PURPLE;
+                } else {
+                    activeTask = null;
+                    checkTasks();
                 }
                 break;
             }
@@ -133,6 +139,9 @@ public class StorageController {
                 if(hasGreen()){
                     // if we don't have to move the indexer we can skip straight to loading phase
                     this.state = readyContentToLeft(SlotContent.GREEN) ? State.READYING_GREEN : State.LOADING_GREEN;
+                } else {
+                    activeTask = null;
+                    checkTasks();
                 }
                 break;
             }
@@ -141,6 +150,9 @@ public class StorageController {
                 if(!isFull()){
                     // if front is already open, just skip to resting
                     this.state = readyContentToFront(SlotContent.OPEN) ? State.BUMPING : State.RESTING;
+                } else {
+                    activeTask = null;
+                    checkTasks();
                 }
                 break;
             }
@@ -155,6 +167,14 @@ public class StorageController {
                 break;
             }
         }
+    }
+
+    public void bumpClockwise(){
+        taskQueue.add(Task.CLOCKWISE_BUMP);
+    }
+
+    public void bumpCounterclockwise(){
+        taskQueue.add(Task.COUNTERCLOCKWISE_BUMP);
     }
 
     private boolean readyContentToFront(SlotContent target){
