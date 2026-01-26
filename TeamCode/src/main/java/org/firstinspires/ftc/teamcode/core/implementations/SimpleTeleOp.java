@@ -47,7 +47,7 @@ public class SimpleTeleOp extends TeleOpCore {
         }
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor"));
+            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
         } catch (Exception e) {
             prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
         }
