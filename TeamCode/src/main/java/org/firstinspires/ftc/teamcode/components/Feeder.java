@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
@@ -13,8 +14,9 @@ public class Feeder {
     public static double restAngle = 0, triggerAngle = 90, tolerance = 1;
     public static boolean reverseServo;
     private State state = State.RESTING;
-    private ChainedFuture<?> triggerFuture;
+    private ChainedFuture<Double> triggerFuture;
     private double targetPosition = 0;
+    private final ElapsedTime timer = new ElapsedTime();
 
     public Feeder(CRServo servo, SmartPotentiometer potentiometer) {
         potentiometer.reset();
@@ -32,9 +34,10 @@ public class Feeder {
      * @return a future that completes with null when the feeder has returned to resting.
      */
     @SuppressWarnings("UnusedReturnValue")
-    public ChainedFuture<?> trigger() {
+    public ChainedFuture<Double> trigger() {
         this.state = State.TRIGGERED;
         setTargetPosition(triggerAngle);
+        timer.reset();
         return triggerFuture = new ChainedFuture<>();
     }
 
@@ -45,7 +48,10 @@ public class Feeder {
                 break;
             }
             case TRIGGERED: {
-                if(getCurrentPosition() >= triggerAngle - tolerance) {
+                if(
+                        getCurrentPosition() >= triggerAngle - tolerance ||
+                        timer.milliseconds() > 2000
+                ) {
                     setTargetPosition(restAngle);
                     state = State.RETURNING_TO_REST;
                 } else {
@@ -56,7 +62,7 @@ public class Feeder {
             case RETURNING_TO_REST: {
                 if(getCurrentPosition() <= restAngle + tolerance) {
                     state = State.RESTING;
-                    triggerFuture.complete(null);
+                    triggerFuture.complete(timer.milliseconds());
                 }
                 break;
             }
@@ -70,9 +76,9 @@ public class Feeder {
             power = 0;
         } else {
             if(getCurrentPosition() > getTargetPosition()){
-                power = -0.5;
+                power = -1;
             } else if (getCurrentPosition() < getTargetPosition()) {
-                power = 0.5;
+                power = 1;
             }
         }
 

@@ -14,7 +14,7 @@ public class Launcher {
 
     private final VelocityPID controller;
 
-    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.001, tolerance = 30;
+    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.0004, tolerance = 30;
 
     public static float ticksPerDegree = (288f/360f);
 

@@ -89,7 +89,7 @@ public class MainTeleOp extends TeleOpCore {
             if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
             }
-            if(gamepad1.dpadUpPressed()){
+            if(gamepad1.dpadLeftPressed()){
                 storageController.loadGreen();
             }
             if(gamepad1.dpadRightPressed()){
@@ -105,6 +105,14 @@ public class MainTeleOp extends TeleOpCore {
                     launcher.setTargetVelocity(launchVelocity);
                 }
             }
+        }
+
+        if(gamepad1.dpadDownPressed()){
+            launchVelocity -= 50;
+        }
+
+        if(gamepad1.dpadUpPressed()){
+            launchVelocity += 50;
         }
 
         //noinspection DuplicatedCode
