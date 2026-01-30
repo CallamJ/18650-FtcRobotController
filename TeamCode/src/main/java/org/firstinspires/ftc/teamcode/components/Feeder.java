@@ -14,7 +14,7 @@ public class Feeder {
     public static double restAngle = 0, triggerAngle = 90, tolerance = 1;
     public static boolean reverseServo;
     private State state = State.RESTING;
-    private ChainedFuture<Double> triggerFuture;
+    ChainedFuture<Double> triggerFuture;
     private double targetPosition = 0;
     private final ElapsedTime timer = new ElapsedTime();
 

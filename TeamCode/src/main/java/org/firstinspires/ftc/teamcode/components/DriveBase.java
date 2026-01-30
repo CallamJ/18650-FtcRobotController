@@ -50,6 +50,8 @@ public class DriveBase {
             follower = Constants.createConfiguredFollower(hardwareMap, config);
             localizer = follower.getPoseTracker().getLocalizer();
             drivetrain = follower.getDrivetrain();
+
+            localizer.update();
         } else {
             localizer = new PinpointLocalizer(hardwareMap, Constants.pinpointConstants);
             drivetrain = new Mecanum(hardwareMap, Constants.mecanumConstants);
@@ -67,10 +69,6 @@ public class DriveBase {
      * @param y the power to move forward/back with. Positive -> forward, Negative -> backward
      * @param turn the power to turn with. Positive -> turn right, Negative -> turn left
      */
-    public void moveUsingPP(double x, double y, double turn){
-        follower.setTeleOpDrive(x, y, turn);
-    }
-
     public void moveUsingPower(double x, double y, double turn){
         // Denominator is the largest motor power (absolute value) or 1
         // This ensures all the powers maintain the correct ratio, but only when
@@ -108,5 +106,9 @@ public class DriveBase {
 
     public void setPowerFactor(double powerFactor){
         this.powerFactor = powerFactor;
+    }
+
+    public Follower getFollower() {
+        return follower;
     }
 }

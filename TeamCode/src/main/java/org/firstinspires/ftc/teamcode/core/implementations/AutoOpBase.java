@@ -1,18 +1,21 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathBuilder;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.CRServo;
 import org.firstinspires.ftc.teamcode.components.*;
-import org.firstinspires.ftc.teamcode.core.SmartGamepad;
-import org.firstinspires.ftc.teamcode.core.TeleOpCore;
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
-@Configurable
-@TeleOp(name = "1 - Main TeleOp")
-public class MainTeleOp extends TeleOpCore {
+import java.nio.file.Path;
+
+public abstract class AutoOpBase extends OpModeCore {
+
     protected static DriveBase driveBase;
     protected static Feeder feeder;
     protected static Collector collector;
@@ -20,14 +23,8 @@ public class MainTeleOp extends TeleOpCore {
     protected static Launcher launcher;
     protected static StorageController storageController;
 
-    public static double launchVelocity = 2500;
-
-    @Override
-    protected void initialize(){
-        //noinspection DuplicatedCode
-
+    protected void initialize() {
         super.initialize();
-
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
         configBuilder.leftRear("LRear", Direction.FORWARD);
@@ -70,75 +67,15 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
+    protected void run() {
+        super.run();
+        Follower follower = driveBase.getFollower();
 
-        if(driveBase != null){
-            driveBase.moveUsingPower(-gamepad1.leftStickX, -gamepad1.leftStickY, -gamepad1.rightStickX);
-        }
-
-        if(feeder != null){
-            if(gamepad1.yPressed()){
-                feeder.trigger();
-            }
-        }
-
-        if(storageController != null){
-            if(gamepad1.leftBumperPressed() && feeder.getState() == Feeder.State.RESTING){
-                indexer.advanceIndexCounterclockwise();
-            }
-            if(gamepad1.rightBumperPressed() && feeder.getState() == Feeder.State.RESTING){
-                indexer.advanceIndexClockwise();
-            }
-            if(gamepad1.dpadLeftPressed()){
-                storageController.loadGreen();
-            }
-            if(gamepad1.dpadRightPressed()){
-                storageController.loadPurple();
-            }
-        }
-
-        if(launcher != null){
-            if(gamepad1.xPressed()){
-                if(launcher.getTargetVelocity() == launchVelocity){
-                    launcher.stop();
-                } else {
-                    launcher.setTargetVelocity(launchVelocity);
-                }
-            }
-        }
-
-        if(gamepad1.dpadDownPressed()){
-            launchVelocity -= 50;
-        }
-
-        if(gamepad1.dpadUpPressed()){
-            launchVelocity += 50;
-        }
-
-        //noinspection DuplicatedCode
-        if(collector != null){
-            if(gamepad1.aPressed()){
-                double forwardPower = 1;
-                if(collector.getPower() == forwardPower){
-                    collector.stop();
-                } else {
-                    collector.setPower(forwardPower);
-                }
-            }
-
-            if(gamepad1.bPressed()){
-                double reversePower = -0.5;
-                if(collector.getPower() == reversePower){
-                    collector.stop();
-                } else {
-                    collector.setPower(reversePower);
-                }
-            }
-        }
+        follower.followPath(buildPath(follower.pathBuilder()));
     }
 
     @Override
-    public void tick(){
+    public void tick() {
         super.tick();
 
         if(storageController != null){
@@ -153,4 +90,6 @@ public class MainTeleOp extends TeleOpCore {
             driveBase.getFollower().update();
         }
     }
+
+    public abstract PathChain buildPath(PathBuilder pathBuilder);
 }

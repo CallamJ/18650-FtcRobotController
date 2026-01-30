@@ -26,6 +26,7 @@ public abstract class OpModeCore extends LinearOpMode {
 		instance = this;
 		initialize();
 		waitForStart();
+		run();
 		while(opModeIsActive()){
 			tick();
 		}
@@ -36,6 +37,8 @@ public abstract class OpModeCore extends LinearOpMode {
 		PersistentStorage.init(hardwareMap);
 		this.prettyTelem = new PrettyTelemetry(telemetry, PanelsTelemetry.INSTANCE.getFtcTelemetry());
 	}
+
+	protected void run(){}
 
 	public void tick(){
 		simpleTick();

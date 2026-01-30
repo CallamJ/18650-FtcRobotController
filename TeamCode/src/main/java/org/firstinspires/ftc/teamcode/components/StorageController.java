@@ -8,6 +8,7 @@ import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 @Configurable
 public class StorageController {
@@ -60,15 +61,17 @@ public class StorageController {
         switch(state){
             case RESTING: {
                 activeTask = null;
-                updateIndexerContent();
                 checkTasks();
+                if(!indexer.isBusy()){
+                    updateIndexerContent();
+                }
 
                 // if we aren't busy and the collection slot is full, make room.
-                if(taskQueue.isEmpty() && activeTask == null){
-                    if(getFrontContent() != SlotContent.OPEN && !isFull()){
-                        taskQueue.add(Task.READY_FOR_COLLECTION);
-                    }
-                }
+//                if(taskQueue.isEmpty() && activeTask == null){
+//                    if(getFrontContent() != SlotContent.OPEN && !isFull()){
+//                        taskQueue.add(Task.READY_FOR_COLLECTION);
+//                    }
+//                }
 
                 break;
             }
@@ -90,7 +93,13 @@ public class StorageController {
             case LOADING_PURPLE: {
                 if(feeder.getState() == Feeder.State.RESTING){
                     this.state = State.RESTING;
-                    setLeftContent(SlotContent.OPEN);
+                    try {
+                        if(feeder.triggerFuture != null && feeder.triggerFuture.get() < 2000){
+                            setLeftContent(SlotContent.OPEN);
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 break;
             }
@@ -129,6 +138,7 @@ public class StorageController {
                     // if we don't have to move the indexer we can skip straight to loading phase
                     this.state = readyContentToLeft(SlotContent.PURPLE) ? State.READYING_PURPLE : State.LOADING_PURPLE;
                 } else {
+                    // skip this task and check for more tasks
                     activeTask = null;
                     checkTasks();
                 }
@@ -140,6 +150,7 @@ public class StorageController {
                     // if we don't have to move the indexer we can skip straight to loading phase
                     this.state = readyContentToLeft(SlotContent.GREEN) ? State.READYING_GREEN : State.LOADING_GREEN;
                 } else {
+                    // skip this task and check for more tasks
                     activeTask = null;
                     checkTasks();
                 }
@@ -151,6 +162,7 @@ public class StorageController {
                     // if front is already open, just skip to resting
                     this.state = readyContentToFront(SlotContent.OPEN) ? State.BUMPING : State.RESTING;
                 } else {
+                    // skip this task and check for more tasks
                     activeTask = null;
                     checkTasks();
                 }
