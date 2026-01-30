@@ -19,7 +19,7 @@ public class VelocityPID extends PID {
     private final ElapsedTime velocityTimer = new ElapsedTime();
 
     protected VelocityPID(DoubleSupplier kP, DoubleSupplier kI, DoubleSupplier kD, DoubleSupplier kF, double tolerance) {
-        super(kP, kI, kD, kF, tolerance);
+        super(kP, kI, kD, kF, tolerance, false);
     }
 
     /**

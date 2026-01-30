@@ -16,7 +16,7 @@ public class DirectionalPID extends PID implements ControlAlgorithm {
 			DoubleSupplier kPReverse, DoubleSupplier kIReverse, DoubleSupplier kDReverse, DoubleSupplier kFReverse,
 			double tolerance
 	){
-		super(() -> 0, () -> 0, () -> 0, () -> 0, tolerance); // Placeholder values
+		super(() -> 0, () -> 0, () -> 0, () -> 0, tolerance, false); // Placeholder values
 		this.kPForward = kPForward;
 		this.kIForward = kIForward;
 		this.kDForward = kDForward;

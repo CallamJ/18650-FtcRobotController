@@ -20,16 +20,18 @@ public class PID implements ControlAlgorithm {
     protected final ElapsedTime timer = new ElapsedTime();
     boolean isBusy = true;
     protected Direction direction;
+    protected boolean directionalKF = true;
     Notifier noLongerBusyNotifier = new Notifier();
 
     protected final DoubleSupplier kP, kI, kD, kF;
 
-    protected PID(DoubleSupplier kP, DoubleSupplier kI, DoubleSupplier kD, DoubleSupplier kF, double tolerance) {
+    protected PID(DoubleSupplier kP, DoubleSupplier kI, DoubleSupplier kD, DoubleSupplier kF, double tolerance, boolean directionalKF) {
         this.kP = kP;
         this.kI = kI;
         this.kD = kD;
         this.kF = kF;
         this.tolerance = tolerance;
+        this.directionalKF = directionalKF;
     }
 
     /**
@@ -77,7 +79,14 @@ public class PID implements ControlAlgorithm {
 
             lastError = currentError;
 
-            double output = p + integral + d + kF;
+            double output;
+            if(directionalKF) {
+                output = p + integral + d + kF * (Math.signum(currentError));
+                fResult = kF * Math.signum(currentError);
+            } else {
+                output = p + integral + d + kF;
+                fResult = kF;
+            }
 
             if (direction == Direction.REVERSE) {
                 output = -output;
@@ -86,7 +95,7 @@ public class PID implements ControlAlgorithm {
             pResult = p;
             iResult = integral;
             dResult = d;
-            fResult = kF;
+
 
 
             result = output;
@@ -152,6 +161,7 @@ public class PID implements ControlAlgorithm {
     public static class Builder {
         private DoubleSupplier kP = () -> 0, kI = () -> 0, kD = () -> 0, kF = () -> 0;
         private double tolerance;
+        private boolean directionalKF = true;
 
         public Builder setKP(double kP) { this.kP = () -> kP; return this; }
         public Builder setKI(double kI) { this.kI = () -> kI; return this; }
@@ -165,7 +175,10 @@ public class PID implements ControlAlgorithm {
             this.tolerance = tolerance;
             return this;
         }
+        public void  setDirectionalKF(boolean directionalKF) {
+            this.directionalKF = directionalKF;
+        }
 
-        public PID build() { return new PID(kP, kI, kD, kF, tolerance); }
+        public PID build() { return new PID(kP, kI, kD, kF, tolerance,  directionalKF); }
     }
 }

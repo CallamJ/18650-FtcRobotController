@@ -31,7 +31,7 @@ public class Feeder {
     }
 
     /**
-     * @return a future that completes with null when the feeder has returned to resting.
+     * @return a future that completes with the time it took in ms when the feeder has returned to resting.
      */
     @SuppressWarnings("UnusedReturnValue")
     public ChainedFuture<Double> trigger() {
@@ -50,7 +50,7 @@ public class Feeder {
             case TRIGGERED: {
                 if(
                         getCurrentPosition() >= triggerAngle - tolerance ||
-                        timer.milliseconds() > 2000
+                        timer.milliseconds() > 2000 // timeout
                 ) {
                     setTargetPosition(restAngle);
                     state = State.RETURNING_TO_REST;
@@ -62,7 +62,7 @@ public class Feeder {
             case RETURNING_TO_REST: {
                 if(getCurrentPosition() <= restAngle + tolerance) {
                     state = State.RESTING;
-                    triggerFuture.complete(timer.milliseconds());
+                    triggerFuture.complete(timer.milliseconds()); // report how long it took
                 }
                 break;
             }

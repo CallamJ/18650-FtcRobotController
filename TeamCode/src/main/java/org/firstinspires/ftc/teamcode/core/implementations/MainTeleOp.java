@@ -85,9 +85,11 @@ public class MainTeleOp extends TeleOpCore {
         if(storageController != null){
             if(gamepad1.leftBumperPressed() && feeder.getState() == Feeder.State.RESTING){
                 indexer.advanceIndexCounterclockwise();
+                storageController.dropFreshFlag();
             }
             if(gamepad1.rightBumperPressed() && feeder.getState() == Feeder.State.RESTING){
                 indexer.advanceIndexClockwise();
+                storageController.dropFreshFlag();
             }
             if(gamepad1.dpadLeftPressed()){
                 storageController.loadGreen();

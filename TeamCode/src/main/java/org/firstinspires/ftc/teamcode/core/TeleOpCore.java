@@ -29,6 +29,7 @@ public abstract class TeleOpCore extends OpModeCore {
 		Gamepad gamepad2Base = new Gamepad();
 		gamepad2Base.copy(this.gamepad2);
 
+        // wrap with our own gamepad wrapper, since the official SDK can lie about rising/falling edge detections
         SmartGamepad gamepad1 = new SmartGamepad(gamepad1Base, previousGamepad1);
         SmartGamepad gamepad2 = new SmartGamepad(gamepad2Base, previousGamepad2);
 
