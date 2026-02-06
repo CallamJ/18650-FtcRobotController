@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
@@ -19,6 +21,8 @@ public class StorageController {
     private final Queue<Task> taskQueue;
     private Task activeTask;
     private State state;
+    private final Servo leftLED, rightLED, frontLED;
+    private boolean isJamCorrecting = false;
 
     /**
      * Slot 0: The slot that faces forward when the opmode is started.<br>
@@ -38,7 +42,10 @@ public class StorageController {
             Feeder feeder,
             Indexer indexer,
             Collector collector,
-            SmartColorSensor frontSensor
+            SmartColorSensor frontSensor,
+            Servo leftLED,
+            Servo rightLED,
+            Servo frontLED
     ) {
         this.feeder = feeder;
         this.indexer = indexer;
@@ -48,13 +55,19 @@ public class StorageController {
         this.isFrontFresh = false;
         this.taskQueue = new ArrayDeque<>();
         this.state = State.RESTING;
+        this.leftLED = leftLED;
+        this.rightLED = rightLED;
+        this.frontLED = frontLED;
 
         PrettyTelemetry.Item item = OpModeCore.getTelemetry().addLine("Storage Controller")
                 .addData("State", () -> this.state.toString())
                 .addData("Front Content", this::getFrontContent)
                 .addData("Right Content", this::getRightContent)
                 .addData("Left Content", this::getLeftContent)
+                .addData("Indexer Velocity", indexer::getVelocity)
                 .addData("Active Task", () -> this.activeTask == null ? "None" : this.activeTask.toString())
+                .addData("Is Jam Correcting", () -> isJamCorrecting)
+                .addData("Jam Timer", () -> timer.milliseconds())
                 .addData("Task Queue", taskQueue::toString);
 
         OpModeCore.getTelemetry().addLine("Color Sensor")
@@ -64,9 +77,25 @@ public class StorageController {
                 .addData("Sensor Value", () -> frontSensor.getHSV()[2]);
     }
 
+    public void bumpIndexerZero(double bumpVal){
+        indexer.bumpZero((int)( ((double) 8192 / 360) * bumpVal));
+    }
+
     public void tick(){
         feeder.tick();
         indexer.tick();
+        applyContentColor(leftLED, getLeftContent());
+        applyContentColor(rightLED, getRightContent());
+        applyContentColor(frontLED, getFrontContent());
+
+        //checkForIndexerJam();
+
+//        if(isJamCorrecting && !indexer.isBusy()){
+//            this.isJamCorrecting = false;
+//            indexer.setTargetIndex(lastTarget);
+//            return;
+//        }
+
         switch(state){
             case RESTING: {
                 activeTask = null;
@@ -306,6 +335,39 @@ public class StorageController {
         indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3] = content;
     }
 
+    private void applyContentColor(Servo led, SlotContent content){
+        switch(content){
+            case OPEN: {
+                led.setPosition(1);
+                break;
+            }
+            case GREEN: {
+                led.setPosition(0.5);
+                break;
+            }
+            case PURPLE: {
+                led.setPosition(0.7);
+                break;
+            }
+        }
+    }
+
+    private ElapsedTime timer = new ElapsedTime();
+    private long lastTarget = 0;
+    private void checkForIndexerJam(){
+        if(indexer.isBusy() && Math.abs(indexer.getVelocity()) <= 25 && !isJamCorrecting){
+            if(timer.milliseconds() > 300){
+                timer.reset();
+                lastTarget = indexer.getTargetIndex();
+                long lastCurrent = indexer.getCurrentIndex();
+                indexer.setTargetIndex(lastCurrent);
+                isJamCorrecting = true;
+            }
+        } else {
+            timer.reset();
+        }
+    }
+
     public enum SlotContent {
         OPEN,
         GREEN,
@@ -315,6 +377,10 @@ public class StorageController {
     // COMMAND CONTROL:
     public void clearCommandQueue(){
         taskQueue.clear();
+    }
+
+    public boolean allTasksComplete(){
+        return activeTask == null && taskQueue.isEmpty();
     }
 
     public ChainedFuture<Object> loadGreen(){

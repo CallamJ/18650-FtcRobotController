@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.components.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
@@ -20,7 +21,7 @@ public class MainTeleOp extends TeleOpCore {
     protected static Launcher launcher;
     protected static StorageController storageController;
 
-    public static double launchVelocity = 2500;
+    public static double launchVelocity = 2150;
 
     @Override
     protected void initialize(){
@@ -51,7 +52,10 @@ public class MainTeleOp extends TeleOpCore {
                     feeder,
                     indexer,
                     collector,
-                    Hardware.getColorSensor("frontColorSensor")
+                    Hardware.getColorSensor("frontColorSensor"),
+                    hardwareMap.get(Servo.class, "leftLED"),
+                    hardwareMap.get(Servo.class, "rightLED"),
+                    hardwareMap.get(Servo.class, "frontLED")
             );
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
@@ -78,7 +82,11 @@ public class MainTeleOp extends TeleOpCore {
 
         if(feeder != null){
             if(gamepad1.yPressed()){
-                feeder.trigger();
+                feeder.trigger().thenRun((time -> {
+                    if(time < 2000){
+                        storageController.setLeftContent(StorageController.SlotContent.OPEN);
+                    }
+                }));
             }
         }
 
@@ -96,6 +104,14 @@ public class MainTeleOp extends TeleOpCore {
             }
             if(gamepad1.dpadRightPressed()){
                 storageController.loadPurple();
+            }
+            int bumpVal = (int)( (gamepad1.rightTrigger - gamepad1.leftTrigger)*20);
+            if(bumpVal != 0)
+                indexer.bumpZero(bumpVal);
+            if(gamepad1.startPressed()){
+                storageController.setLeftContent(StorageController.SlotContent.OPEN);
+                storageController.setRightContent(StorageController.SlotContent.OPEN);
+                storageController.setFrontContent(StorageController.SlotContent.OPEN);
             }
         }
 

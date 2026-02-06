@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
+import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathBuilder;
@@ -7,7 +8,7 @@ import com.pedropathing.paths.PathChain;
 
 public class Red3ArtifactFarAuto extends AutoOpBase {
     @Override
-    public PathChain buildPath(PathBuilder pathBuilder) {
+    public PathChain buildPath(PathBuilder pathBuilder, Follower follower) {
         Pose scorePose = new Pose(0, 0, 0);
         Pose pickup1Pose = new Pose(12, 24, 90);
 

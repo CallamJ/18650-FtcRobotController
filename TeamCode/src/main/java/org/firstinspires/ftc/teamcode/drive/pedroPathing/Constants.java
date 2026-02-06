@@ -16,7 +16,8 @@ import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 
 @Configurable
 public class Constants {
-    public static FollowerConstants followerConstants = new FollowerConstants();
+    public static FollowerConstants followerConstants = new FollowerConstants()
+            .mass(11);
 
     public static PinpointConstants pinpointConstants = new PinpointConstants()
             .hardwareMapName("pinpoint")

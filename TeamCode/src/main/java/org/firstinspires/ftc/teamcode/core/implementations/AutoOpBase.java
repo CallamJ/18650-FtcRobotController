@@ -1,18 +1,19 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.components.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
-import java.nio.file.Path;
+import java.util.List;
 
 public abstract class AutoOpBase extends OpModeCore {
 
@@ -23,6 +24,13 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static Launcher launcher;
     protected static StorageController storageController;
 
+    protected static Limelight3A limelight;
+
+    protected int fiducialId = -1;
+
+    private List<Integer> validFidIds = List.of(21, 22, 23);
+
+
     protected void initialize() {
         super.initialize();
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
@@ -30,6 +38,27 @@ public abstract class AutoOpBase extends OpModeCore {
         configBuilder.leftRear("LRear", Direction.FORWARD);
         configBuilder.rightFront("RFront", Direction.REVERSE);
         configBuilder.rightRear("RRear", Direction.FORWARD);
+
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+
+        telemetry.setMsTransmissionInterval(11);
+
+        limelight.pipelineSwitch(0);
+
+        limelight.start();
+
+        prettyTelem.addLine("Limelight")
+                .addData("FPS", ()-> limelight.getStatus().getFps())
+                .addData("Fiducial ID", () -> {
+                    List<LLResultTypes.FiducialResult> fiducialResults = limelight.getLatestResult().getFiducialResults();
+                    for (LLResultTypes.FiducialResult result : fiducialResults) {
+                        if(fiducialId == -1 && validFidIds.contains(result.getFiducialId())) {
+                            this.fiducialId = result.getFiducialId();
+                        }
+                    }
+                    return fiducialId;
+                })
+                .addData("Is Result Valid?", () -> limelight.getLatestResult().isValid());
 
         try {
             driveBase = new DriveBase(hardwareMap, configBuilder.build(), true);
@@ -48,7 +77,10 @@ public abstract class AutoOpBase extends OpModeCore {
                     feeder,
                     indexer,
                     collector,
-                    Hardware.getColorSensor("frontColorSensor")
+                    Hardware.getColorSensor("frontColorSensor"),
+                    hardwareMap.get(Servo.class, "leftLED"),
+                    hardwareMap.get(Servo.class, "rightLED"),
+                    hardwareMap.get(Servo.class, "frontLED")
             );
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
@@ -71,7 +103,6 @@ public abstract class AutoOpBase extends OpModeCore {
         super.run();
         Follower follower = driveBase.getFollower();
 
-        follower.followPath(buildPath(follower.pathBuilder()));
     }
 
     @Override
@@ -91,5 +122,5 @@ public abstract class AutoOpBase extends OpModeCore {
         }
     }
 
-    public abstract PathChain buildPath(PathBuilder pathBuilder);
+    public abstract PathChain buildPath(PathBuilder pathBuilder, Follower follower);
 }

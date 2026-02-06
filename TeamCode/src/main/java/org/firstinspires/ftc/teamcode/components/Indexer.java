@@ -11,7 +11,6 @@ public class Indexer extends AxisComponent {
 
     public static double kP = 0.005, kI = 0, kD = 0.005, kF = 0.0275, tolerance = 1;
     public static float ticksPerDegree = 8192f/360f;
-
     private final SmartMotor motor;
 
 
@@ -43,6 +42,10 @@ public class Indexer extends AxisComponent {
     protected void tickPIDF() {
         controller.calc(getTargetPosition(), getCurrentPosition());
         motor.setPower(controller.result());
+    }
+
+    public double getVelocity(){
+        return motor.getVelocity();
     }
 
     @Override
@@ -80,6 +83,10 @@ public class Indexer extends AxisComponent {
 
     public short getNormalizedCurrentIndex() {
         return (short) Math.floorMod(getCurrentIndex(), 3);
+    }
+
+    public void bumpZero(int bumpVal){
+        motor.getEncoder().addOffset(bumpVal);
     }
 
     private long degreesToIndex(double degrees){

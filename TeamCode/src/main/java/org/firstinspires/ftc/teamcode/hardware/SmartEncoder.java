@@ -119,6 +119,10 @@ public class SmartEncoder extends Device implements Caching {
         tickOffsetToZero = positionCache.updateAndGet() - position;
     }
 
+    public void addOffset(int offset) {
+        tickOffsetToZero += offset;
+    }
+
     /**
      * Sets the direction of the encoder.
      *

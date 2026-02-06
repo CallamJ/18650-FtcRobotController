@@ -72,10 +72,10 @@ public class Feeder {
 
     protected void tickPIDF() {
         double power = 0;
-        if(state == State.RESTING){
+        if (state == State.RESTING) {
             power = 0;
         } else {
-            if(getCurrentPosition() > getTargetPosition()){
+            if (getCurrentPosition() > getTargetPosition()) {
                 power = -1;
             } else if (getCurrentPosition() < getTargetPosition()) {
                 power = 1;
