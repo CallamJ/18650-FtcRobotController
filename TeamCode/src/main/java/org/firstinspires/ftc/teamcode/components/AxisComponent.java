@@ -1,12 +1,7 @@
 package org.firstinspires.ftc.teamcode.components;
 
-import com.qualcomm.robotcore.util.ElapsedTime;
-
-import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
-import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 import org.firstinspires.ftc.teamcode.utilities.Notifier;
-import org.firstinspires.ftc.teamcode.utilities.TaskScheduler;
 
 /**
  * Represents a controllable degree of motion component, allowing position-based movement
@@ -19,9 +14,6 @@ public abstract class AxisComponent {
 
 	/** The target position the component is trying to reach. */
 	private double target;
-
-	/** Scheduler for handling asynchronous tasks. */
-	protected TaskScheduler scheduler = new TaskScheduler(4);
 
 	/** Notifier used to signal when the component is no longer busy. Will wake waiting threads when the component goes from {@code isBusy==true} to {@code isBusy==false}*/
 	public final Notifier noLongerBusyNotifier;
@@ -92,78 +84,6 @@ public abstract class AxisComponent {
 	public void setTargetPosition(double position) {
 		target = position;
 	}
-
-	/**
-	 * Moves the component to a specified position and blocks execution until it reaches the target.
-	 * Continuously updates the PID loop and telemetry.
-	 *
-	 * @param position the target position to move to.
-	 */
-	public void goToBlocking(double position) {
-		target = position;
-		while (isBusy() && !Thread.interrupted()) {
-			tick();
-			OpModeCore.simpleTick();
-		}
-	}
-
-	/**
-	 * Moves the component to a specified position and blocks execution until it reaches the target.
-	 * Continuously updates the PID loop and telemetry.
-	 *
-	 * @param position the target position to move to.
-	 */
-	public void goToBlocking(double position, long timeoutMs) {
-		ElapsedTime timeoutTimer = new ElapsedTime();
-		target = position;
-		while (isBusy() && !Thread.interrupted() && timeoutTimer.milliseconds() < timeoutMs) {
-			tick();
-			OpModeCore.simpleTick();
-		}
-	}
-
-	/**
-	 * Moves the component to a specified position asynchronously.
-	 * Will lazily move to the target position when {@link AxisComponent#tick()} is called.
-	 * <p>
-	 *     Used for scheduling tasks after a move, use {@link AxisComponent#setTargetPosition(double)}
-	 *     for going to a target lazily when scheduling is not required.
-	 * </p>
-	 *
-	 * @param angle the target position to move to.
-	 * @return a {@code ChainedFuture} representing the asynchronous task.
-	 */
-	public ChainedFuture<?> goToAsync(double angle) {
-		noLongerBusyNotifier.interruptWaitingThreads();
-		return scheduler.runAsync(() -> {
-			target = angle;
-			if (isBusy()) {
-				noLongerBusyNotifier.await();
-			}
-		});
-	}
-
-	/**
-	 * Moves the component to a specified position asynchronously.
-	 * Will lazily move to the target position when {@link AxisComponent#tick()} is called.
-	 * <p>
-	 *     Used for scheduling tasks after a move, use {@link AxisComponent#setTargetPosition(double)}
-	 *     for going to a target lazily when scheduling is not required.
-	 * </p>
-	 *
-	 * @param angle the target position to move to.
-	 * @return a {@code ChainedFuture} representing the asynchronous task.
-	 */
-	public ChainedFuture<?> goToAsync(double angle, long timeoutMs) {
-		noLongerBusyNotifier.interruptWaitingThreads();
-		return scheduler.runAsync(() -> {
-			target = angle;
-			if (isBusy()) {
-				noLongerBusyNotifier.await(timeoutMs);
-			}
-		});
-	}
-
 
 	 public double getPower(){
 		return controller.result();

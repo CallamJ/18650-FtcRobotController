@@ -6,7 +6,6 @@ import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.ScoringColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
-import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -163,15 +162,9 @@ public class StorageController {
             case LOADING_PURPLE: {
                 if(feeder.getState() == Feeder.State.RESTING){
                     this.state = State.RESTING;
-                    try {
-                        if(feeder.triggerFuture != null && feeder.triggerFuture.get() < 2000){
-                            setLeftContent(SlotContent.OPEN);
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        OpModeCore.getTelemetry().warning("Feeder trigger wait interrupted; continuing.");
-                    } catch (ExecutionException e) {
-                        OpModeCore.getTelemetry().error("Feeder trigger future failed: " + e.getMessage());
+                    Double lastTriggerDurationMs = feeder.getLastTriggerDurationMs();
+                    if(lastTriggerDurationMs != null && lastTriggerDurationMs < 2000){
+                        setLeftContent(SlotContent.OPEN);
                     }
                 }
                 break;
@@ -463,19 +456,11 @@ public class StorageController {
         return activeTask == null && taskQueue.isEmpty();
     }
 
-    public ChainedFuture<Object> loadGreen(){
-        ChainedFuture<Object> future = new ChainedFuture<>();
-
+    public void loadGreen(){
         taskQueue.add(Task.LOAD_GREEN);
-
-        return future;
     }
-    public ChainedFuture<Object> loadPurple(){
-        ChainedFuture<Object> future = new ChainedFuture<>();
-
+    public void loadPurple(){
         taskQueue.add(Task.LOAD_PURPLE);
-
-        return future;
     }
 
     public void dropFreshFlag(){

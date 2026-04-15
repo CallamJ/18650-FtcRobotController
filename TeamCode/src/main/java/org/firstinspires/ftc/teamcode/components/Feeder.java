@@ -4,7 +4,6 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
-import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
 @Configurable
 public class Feeder {
@@ -13,7 +12,7 @@ public class Feeder {
     public static double restAngle = 0, triggerAngle = 90, tolerance = 1;
     public static boolean reverseServo;
     private State state = State.RESTING;
-    ChainedFuture<Double> triggerFuture;
+    private Double lastTriggerDurationMs;
     private double targetPosition = 0;
     private final ElapsedTime timer = new ElapsedTime();
 
@@ -26,14 +25,13 @@ public class Feeder {
     }
 
     /**
-     * @return a future that completes with the time it took in ms when the feeder has returned to resting.
+     * Starts a feeder trigger cycle.
      */
-    @SuppressWarnings("UnusedReturnValue")
-    public ChainedFuture<Double> trigger() {
+    public void trigger() {
         this.state = State.TRIGGERED;
         setTargetPosition(triggerAngle);
         timer.reset();
-        return triggerFuture = new ChainedFuture<>();
+        lastTriggerDurationMs = null;
     }
 
     public void tick() {
@@ -57,7 +55,7 @@ public class Feeder {
             case RETURNING_TO_REST: {
                 if(getCurrentPosition() <= restAngle + tolerance) {
                     state = State.RESTING;
-                    triggerFuture.complete(timer.milliseconds()); // report how long it took
+                    lastTriggerDurationMs = timer.milliseconds();
                 }
                 break;
             }
@@ -94,6 +92,10 @@ public class Feeder {
 
     public State getState() {
         return state;
+    }
+
+    public Double getLastTriggerDurationMs() {
+        return lastTriggerDurationMs;
     }
 
     public enum State {

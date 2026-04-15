@@ -100,6 +100,7 @@ public class MainTeleOp extends TeleOpCore {
     private double lastSolvedObeliskPoseYIn = 0;
     private double lastSeenObeliskCamXIn = 0;
     private double lastSeenObeliskCamZIn = 0;
+    private boolean clearLeftSlotWhenFeederReturns = false;
 
     private static void resetSubsystemReferences() {
         if (limelight != null) {
@@ -145,6 +146,7 @@ public class MainTeleOp extends TeleOpCore {
         telemetryMode = TelemetryMode.DEBUG;
         obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
         obeliskRelocalizeStatus = "IDLE";
+        clearLeftSlotWhenFeederReturns = false;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
@@ -292,11 +294,8 @@ public class MainTeleOp extends TeleOpCore {
 
         if(feeder != null){
             if(gamepad1.yPressed()){
-                feeder.trigger().thenRun((time -> {
-                    if(time < 2000 && storageController != null){
-                        storageController.setLeftContent(StorageController.SlotContent.OPEN);
-                    }
-                }));
+                feeder.trigger();
+                clearLeftSlotWhenFeederReturns = true;
             }
         }
 
@@ -377,6 +376,14 @@ public class MainTeleOp extends TeleOpCore {
 
     @Override
     protected void onTick(){
+        if (clearLeftSlotWhenFeederReturns && feeder != null && feeder.getState() == Feeder.State.RESTING) {
+            Double lastTriggerDurationMs = feeder.getLastTriggerDurationMs();
+            if(lastTriggerDurationMs != null && lastTriggerDurationMs < 2000 && storageController != null){
+                storageController.setLeftContent(StorageController.SlotContent.OPEN);
+            }
+            clearLeftSlotWhenFeederReturns = false;
+        }
+
         if(storageController != null){
             storageController.tick();
         }
