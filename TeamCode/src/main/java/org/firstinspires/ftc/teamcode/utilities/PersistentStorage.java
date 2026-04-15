@@ -33,6 +33,13 @@ public class PersistentStorage {
     }
 
     /**
+     * @return whether persistent storage has been initialized for the current process.
+     */
+    public static boolean isInitialized() {
+        return prefs != null && editor != null;
+    }
+
+    /**
      * Saves an integer value.
      *
      * @param key   The key for storage.

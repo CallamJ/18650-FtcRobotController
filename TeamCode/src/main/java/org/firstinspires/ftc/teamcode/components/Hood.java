@@ -1,58 +1,24 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.robotcore.hardware.CRServo;
-import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
-import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
-import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
+import org.firstinspires.ftc.teamcode.hardware.SmartServo;
 
 @Configurable
 public class Hood {
-    public static double kP = 0.01, kI = 0, kD = 0.005, kF = 0.02, tolerance = 1;
+    private final SmartServo servo;
 
-    private final CRServo lServo, rServo;
-    private final SmartPotentiometer potentiometer;
+    //arc angle in degrees 40-50
 
-    private double targetLaunchAngle;
-
-    private final ControlAlgorithm controller;
-
-    public Hood(CRServo lServo, CRServo rServo, SmartPotentiometer potentiometer) {
-        this.lServo = lServo;
-        this.rServo = rServo;
-        this.potentiometer = potentiometer;
-        this.controller = new PID.Builder()
-                .setKP(() -> kP)
-                .setKI(() -> kI)
-                .setKD(() -> kD)
-                .setKF(() -> kF)
-                .setTolerance(tolerance)
-                .build();
+    public Hood(SmartServo servo) {
+        this.servo = servo;
     }
 
-    public boolean isBusy(){
-        return Math.abs(angleToLaunchAngle(potentiometer.getAngle()) -  targetLaunchAngle) > controller.getTolerance();
+    public void setTargetPosition(double targetPosition) {
+        this.servo.setPosition(targetPosition);
     }
 
-    public void setTargetLaunchAngle(double targetLaunchAngle) {
-        this.targetLaunchAngle = targetLaunchAngle;
+    public double getTargetPosition() {
+        return servo.getPosition();
     }
 
-    public double getCurrentLaunchAngle() {
-        return angleToLaunchAngle(potentiometer.getAngle());
-    }
-
-    public double getTargetLaunchAngle() {
-        return targetLaunchAngle;
-    }
-
-    public void tick(){
-        controller.calc(targetLaunchAngle, getCurrentLaunchAngle());
-        lServo.setPower(controller.result());
-        rServo.setPower(controller.result());
-    }
-
-    private double angleToLaunchAngle(double position) {
-        throw new UnsupportedOperationException("This method is not yet implemented!"); //TODO: need to implement Hood.angleToLaunchAngle
-    }
 }

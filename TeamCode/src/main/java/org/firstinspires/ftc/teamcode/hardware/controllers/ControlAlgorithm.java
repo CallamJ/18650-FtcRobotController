@@ -6,6 +6,8 @@ import org.firstinspires.ftc.teamcode.utilities.Notifier;
 public interface ControlAlgorithm {
     Notifier getNoLongerBusyNotifier();
 
+    boolean isBusy();
+
     double calc(double target, double actual);
 
     double result();

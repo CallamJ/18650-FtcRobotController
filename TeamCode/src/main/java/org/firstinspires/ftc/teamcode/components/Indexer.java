@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
-import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
@@ -9,7 +8,7 @@ import org.firstinspires.ftc.teamcode.utilities.Direction;
 @Configurable
 public class Indexer extends AxisComponent {
 
-    public static double kP = 0.005, kI = 0, kD = 0.005, kF = 0.0275, tolerance = 1;
+    public static double kP = 0.007, kI = 0, kD = 0.0075, kF = 0.0001, tolerance = 1, busyTolerance = 2.5;
     public static float ticksPerDegree = 8192f/360f;
     private final SmartMotor motor;
 
@@ -22,6 +21,7 @@ public class Indexer extends AxisComponent {
                 .setKD(() -> kD)
                 .setKF(() -> kF)
                 .setTolerance(tolerance)
+                .setDirectionalKF(true)
                 .build()
         );
         this.motor = motor;
@@ -29,19 +29,17 @@ public class Indexer extends AxisComponent {
         motor.getEncoder().setDirection(Direction.REVERSE);
 
         motor.getEncoder().reset();
-
-        OpModeCore.getTelemetry().addLine("Indexer")
-                .addData("Current Position", this::getCurrentPosition)
-                .addData("Target Position", this::getTargetPosition)
-                .addData("Is Busy",  this::isBusy)
-                .addData("Current Index",  this::getCurrentIndex)
-                .addData("Target Index", this::getTargetIndex);
     }
 
     @Override
     protected void tickPIDF() {
         controller.calc(getTargetPosition(), getCurrentPosition());
         motor.setPower(controller.result());
+    }
+
+    @Override
+    public boolean isBusy() {
+        return Math.abs(getCurrentPosition() - getTargetPosition()) > busyTolerance;
     }
 
     public double getVelocity(){

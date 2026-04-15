@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.core;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
 import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;

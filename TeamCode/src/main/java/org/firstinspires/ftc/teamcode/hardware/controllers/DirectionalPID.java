@@ -27,7 +27,7 @@ public class DirectionalPID extends PID implements ControlAlgorithm {
 		this.kFReverse = kFReverse;
 	}
 
-	@Override
+    @Override
 	public double calc(double target, double actual){
 		double error = target - actual;
 		if(error >= 0){

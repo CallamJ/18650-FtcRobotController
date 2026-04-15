@@ -38,16 +38,27 @@ public class SmartGamepad {
         this.start = gamepad.start;
         this.options = gamepad.options;
         this.guide = gamepad.guide;
+        this.share = gamepad.share;
+
+        this.touchpad = gamepad.touchpad;
+        this.touchpadFinger1 = gamepad.touchpad_finger_1;
+        this.touchpadFinger2 = gamepad.touchpad_finger_2;
+        this.touchpadFinger1X = gamepad.touchpad_finger_1_x;
+        this.touchpadFinger1Y = gamepad.touchpad_finger_1_y;
+        this.touchpadFinger2X = gamepad.touchpad_finger_2_x;
+        this.touchpadFinger2Y = gamepad.touchpad_finger_2_y;
     }
 
     public final boolean a, b, x, y, cross, triangle, circle, square;
     public final boolean leftBumper, rightBumper;
     public final boolean dpadLeft, dpadRight, dpadUp, dpadDown;
     public final boolean leftStickButton, rightStickButton;
-    public final boolean start, options, guide;
+    public final boolean start, options, guide, share;
+    public final boolean touchpad, touchpadFinger1, touchpadFinger2;
 
     public double leftTrigger, rightTrigger;
     public double leftStickX, leftStickY, rightStickX, rightStickY;
+    public double touchpadFinger1X, touchpadFinger1Y, touchpadFinger2X, touchpadFinger2Y;
 
     public boolean aPressed(){
         return a && !baseLast.a;
@@ -99,6 +110,9 @@ public class SmartGamepad {
 
     public boolean startPressed(){
         return start && !baseLast.start;
+    }
+    public boolean sharePressed() {
+        return share && !baseLast.share;
     }
 
     public boolean optionPressed(){
@@ -215,5 +229,57 @@ public class SmartGamepad {
 
     public boolean rightStickAtRest(){
         return rightStickX == 0 && rightStickY == 0;
+    }
+
+    public boolean touchpadPressed() {
+        return touchpad && !baseLast.touchpad;
+    }
+
+    public boolean touchpadReleased() {
+        return !touchpad && baseLast.touchpad;
+    }
+
+    public boolean touchpadFinger1Pressed() {
+        return touchpadFinger1 && !baseLast.touchpad_finger_1;
+    }
+
+    public boolean touchpadFinger1Released() {
+        return !touchpadFinger1 && baseLast.touchpad_finger_1;
+    }
+
+    public boolean touchpadFinger2Pressed() {
+        return touchpadFinger2 && !baseLast.touchpad_finger_2;
+    }
+
+    public boolean touchpadFinger2Released() {
+        return !touchpadFinger2 && baseLast.touchpad_finger_2;
+    }
+
+    public double touchpadFinger1DeltaX() {
+        if (!touchpadFinger1 || !baseLast.touchpad_finger_1) {
+            return 0;
+        }
+        return touchpadFinger1X - baseLast.touchpad_finger_1_x;
+    }
+
+    public double touchpadFinger1DeltaY() {
+        if (!touchpadFinger1 || !baseLast.touchpad_finger_1) {
+            return 0;
+        }
+        return touchpadFinger1Y - baseLast.touchpad_finger_1_y;
+    }
+
+    public double touchpadFinger2DeltaX() {
+        if (!touchpadFinger2 || !baseLast.touchpad_finger_2) {
+            return 0;
+        }
+        return touchpadFinger2X - baseLast.touchpad_finger_2_x;
+    }
+
+    public double touchpadFinger2DeltaY() {
+        if (!touchpadFinger2 || !baseLast.touchpad_finger_2) {
+            return 0;
+        }
+        return touchpadFinger2Y - baseLast.touchpad_finger_2_y;
     }
 }

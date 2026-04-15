@@ -72,6 +72,9 @@ public class HardwareCache<T> implements Caching {
                     cacheRead = true;
                 }
                 return cachedValue;
+            case ALWAYS_UPDATE:
+                updateCache();
+                return cachedValue;
         }
 
         return cachedValue;

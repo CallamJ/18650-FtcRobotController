@@ -40,114 +40,113 @@ public class FireControlSystem {
     public void tick(){
         turret.tick();
         launcher.tick();
-        hood.tick();
     }
 
     public void updateTargetPositions(Pose goalPosition, Pose launcherPose, Pose launcherVelocityPose){
-        // Calculate relative position from launcher to goal
-        double dx = goalPosition.x() - launcherPose.x();
-        double dy = goalPosition.y() - launcherPose.y();
-        double dz = goalPosition.z() - launcherPose.z();
-
-        // Calculate horizontal distance
-        double horizontalDistance = Math.sqrt(dx * dx + dy * dy);
-
-        // Calculate turret angle (yaw) to point at goal
-        double targetTurretAngle = Math.toDegrees(Math.atan2(dy, dx));
-
-        // Get launcher velocity components (ball starts with this velocity)
-        double launcherVx = launcherVelocityPose.x() * LAUNCHER_VELOCITY_INHERITANCE;
-        double launcherVy = launcherVelocityPose.y() * LAUNCHER_VELOCITY_INHERITANCE;
-        double launcherVz = launcherVelocityPose.z() * LAUNCHER_VELOCITY_INHERITANCE;
-
-        // Calculate optimal launch angle and velocity accounting for initial velocity
-        // The ball will have both launcher velocity AND launch velocity
-        BallisticSolution solution = calculateOptimalTrajectoryWithInitialVelocity(
-                dx, dy, dz,
-                launcherVx, launcherVy, launcherVz,
-                targetTurretAngle,
-                true
-        );
-
-        if (solution.isValid) {
-            // Set turret angle
-            turret.setTargetPosition(solution.turretAngle);
-
-            // Set hood angle (launch angle)
-            hood.setTargetLaunchAngle(solution.launchAngle);
-
-            // Set launcher velocity
-            launcher.setTargetVelocity(solution.launchVelocity);
-        } else {
-            // Target unreachable - point toward it but stop launcher
-            turret.setTargetPosition(targetTurretAngle);
-            launcher.setTargetVelocity(0);
-        }
-    }
-
-    public boolean isReadyToFire(Pose goalPosition, Pose launcherPose, Pose launcherVelocityPose){
-        // Check if all components are within tolerance of their targets
-        boolean turretReady = Math.abs(turret.getTargetPosition() - turret.getCurrentPosition()) <= TURRET_READY_TOLERANCE;
-        boolean hoodReady = Math.abs(hood.getTargetLaunchAngle() - hood.getCurrentLaunchAngle()) <= HOOD_READY_TOLERANCE;
-        boolean launcherReady = Math.abs(launcher.getTargetVelocity() - launcher.getVelocity()) <= VELOCITY_READY_TOLERANCE;
-
-        // Get current settings
-        double currentVelocity = launcher.getVelocity();
-        double currentAngle = hood.getCurrentLaunchAngle();
-        double currentTurretAngle = turret.getCurrentPosition();
-
-        if (currentVelocity < MIN_LAUNCH_VELOCITY) {
-            return false; // Launcher not spinning fast enough
-        }
-
-        // Calculate relative position to goal
-        double dx = goalPosition.x() - launcherPose.x();
-        double dy = goalPosition.y() - launcherPose.y();
-        double dz = goalPosition.z() - launcherPose.z();
-
-        // Get launcher velocity components (ball starts with this velocity)
-        double launcherVx = launcherVelocityPose.x() * LAUNCHER_VELOCITY_INHERITANCE;
-        double launcherVy = launcherVelocityPose.y() * LAUNCHER_VELOCITY_INHERITANCE;
-        double launcherVz = launcherVelocityPose.z() * LAUNCHER_VELOCITY_INHERITANCE;
-
-        // Calculate where projectile will land with current settings AND initial velocity
-        double turretRad = Math.toRadians(currentTurretAngle);
-        double angleRad = Math.toRadians(currentAngle);
-
-        // Launch velocity components in world frame
-        double launchVx = currentVelocity * Math.cos(angleRad) * Math.cos(turretRad);
-        double launchVy = currentVelocity * Math.cos(angleRad) * Math.sin(turretRad);
-        double launchVz = currentVelocity * Math.sin(angleRad);
-
-        // Total initial velocity (launcher velocity + launch velocity)
-        double totalVx = launcherVx + launchVx;
-        double totalVy = launcherVy + launchVy;
-        double totalVz = launcherVz + launchVz;
-
-        // Calculate time of flight
-        // Solve: dz = totalVz * t - 0.5 * g * t^2
-        // Using quadratic formula: t = (totalVz + sqrt(totalVz^2 + 2*g*dz)) / g
-        double discriminant = totalVz * totalVz + 2 * GRAVITY * dz;
-        if (discriminant < 0) {
-            return false; // Can't reach target
-        }
-
-        double timeOfFlight = (totalVz + Math.sqrt(discriminant)) / GRAVITY;
-
-        // Calculate landing position
-        double landingX = launcherPose.x() + totalVx * timeOfFlight;
-        double landingY = launcherPose.y() + totalVy * timeOfFlight;
-
-        // Calculate distance from landing position to goal
-        double landingError = Math.sqrt(
-                Math.pow(landingX - goalPosition.x(), 2) +
-                        Math.pow(landingY - goalPosition.y(), 2)
-        );
-
-        // Check if predicted landing is close to target
-        boolean trajectoryValid = landingError <= LANDING_POSITION_TOLERANCE;
-
-        return turretReady && hoodReady && launcherReady && trajectoryValid;
+//        // Calculate relative position from launcher to goal
+//        double dx = goalPosition.x() - launcherPose.x();
+//        double dy = goalPosition.y() - launcherPose.y();
+//        double dz = goalPosition.z() - launcherPose.z();
+//
+//        // Calculate horizontal distance
+//        double horizontalDistance = Math.sqrt(dx * dx + dy * dy);
+//
+//        // Calculate turret angle (yaw) to point at goal
+//        double targetTurretAngle = Math.toDegrees(Math.atan2(dy, dx));
+//
+//        // Get launcher velocity components (ball starts with this velocity)
+//        double launcherVx = launcherVelocityPose.x() * LAUNCHER_VELOCITY_INHERITANCE;
+//        double launcherVy = launcherVelocityPose.y() * LAUNCHER_VELOCITY_INHERITANCE;
+//        double launcherVz = launcherVelocityPose.z() * LAUNCHER_VELOCITY_INHERITANCE;
+//
+//        // Calculate optimal launch angle and velocity accounting for initial velocity
+//        // The ball will have both launcher velocity AND launch velocity
+//        BallisticSolution solution = calculateOptimalTrajectoryWithInitialVelocity(
+//                dx, dy, dz,
+//                launcherVx, launcherVy, launcherVz,
+//                targetTurretAngle,
+//                true
+//        );
+//
+//        if (solution.isValid) {
+//            // Set turret angle
+//            turret.setTargetPosition(solution.turretAngle);
+//
+//            // Set hood angle (launch angle)
+//            hood.setTargetLaunchAngle(solution.launchAngle);
+//
+//            // Set launcher velocity
+//            launcher.setTargetVelocity(solution.launchVelocity);
+//        } else {
+//            // Target unreachable - point toward it but stop launcher
+//            turret.setTargetPosition(targetTurretAngle);
+//            launcher.setTargetVelocity(0);
+//        }
+//    }
+//
+//    public boolean isReadyToFire(Pose goalPosition, Pose launcherPose, Pose launcherVelocityPose){
+//        // Check if all components are within tolerance of their targets
+//        boolean turretReady = Math.abs(turret.getTargetPosition() - turret.getCurrentPosition()) <= TURRET_READY_TOLERANCE;
+//        boolean hoodReady = Math.abs(hood.getTargetLaunchAngle() - hood.getCurrentLaunchAngle()) <= HOOD_READY_TOLERANCE;
+//        boolean launcherReady = Math.abs(launcher.getTargetVelocity() - launcher.getVelocity()) <= VELOCITY_READY_TOLERANCE;
+//
+//        // Get current settings
+//        double currentVelocity = launcher.getVelocity();
+//        double currentAngle = hood.getCurrentLaunchAngle();
+//        double currentTurretAngle = turret.getCurrentPosition();
+//
+//        if (currentVelocity < MIN_LAUNCH_VELOCITY) {
+//            return false; // Launcher not spinning fast enough
+//        }
+//
+//        // Calculate relative position to goal
+//        double dx = goalPosition.x() - launcherPose.x();
+//        double dy = goalPosition.y() - launcherPose.y();
+//        double dz = goalPosition.z() - launcherPose.z();
+//
+//        // Get launcher velocity components (ball starts with this velocity)
+//        double launcherVx = launcherVelocityPose.x() * LAUNCHER_VELOCITY_INHERITANCE;
+//        double launcherVy = launcherVelocityPose.y() * LAUNCHER_VELOCITY_INHERITANCE;
+//        double launcherVz = launcherVelocityPose.z() * LAUNCHER_VELOCITY_INHERITANCE;
+//
+//        // Calculate where projectile will land with current settings AND initial velocity
+//        double turretRad = Math.toRadians(currentTurretAngle);
+//        double angleRad = Math.toRadians(currentAngle);
+//
+//        // Launch velocity components in world frame
+//        double launchVx = currentVelocity * Math.cos(angleRad) * Math.cos(turretRad);
+//        double launchVy = currentVelocity * Math.cos(angleRad) * Math.sin(turretRad);
+//        double launchVz = currentVelocity * Math.sin(angleRad);
+//
+//        // Total initial velocity (launcher velocity + launch velocity)
+//        double totalVx = launcherVx + launchVx;
+//        double totalVy = launcherVy + launchVy;
+//        double totalVz = launcherVz + launchVz;
+//
+//        // Calculate time of flight
+//        // Solve: dz = totalVz * t - 0.5 * g * t^2
+//        // Using quadratic formula: t = (totalVz + sqrt(totalVz^2 + 2*g*dz)) / g
+//        double discriminant = totalVz * totalVz + 2 * GRAVITY * dz;
+//        if (discriminant < 0) {
+//            return false; // Can't reach target
+//        }
+//
+//        double timeOfFlight = (totalVz + Math.sqrt(discriminant)) / GRAVITY;
+//
+//        // Calculate landing position
+//        double landingX = launcherPose.x() + totalVx * timeOfFlight;
+//        double landingY = launcherPose.y() + totalVy * timeOfFlight;
+//
+//        // Calculate distance from landing position to goal
+//        double landingError = Math.sqrt(
+//                Math.pow(landingX - goalPosition.x(), 2) +
+//                        Math.pow(landingY - goalPosition.y(), 2)
+//        );
+//
+//        // Check if predicted landing is close to target
+//        boolean trajectoryValid = landingError <= LANDING_POSITION_TOLERANCE;
+//
+//        return turretReady && hoodReady && launcherReady && trajectoryValid;
     }
 
     /**

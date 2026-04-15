@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.hardware.*;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
@@ -17,13 +18,16 @@ public class Hardware {
     private static final List<SmartColorSensor> colorSensors = new ArrayList<>();
     private static final List<SmartTouchSensor> touchSensors = new ArrayList<>();
     private static final List<SmartServo> servos = new ArrayList<>();
+    private static final List<SmartLEDIndicator> ledIndicators = new ArrayList<>();
     private static final List<SmartPotentiometer> potentiometers = new ArrayList<>();
     private static final List<SmartAnalogInput> analogInputs = new ArrayList<>();
+    private static final List<SmartLimelight3A> limelight3As = new ArrayList<>();
     private static final List<Device> devices = new ArrayList<>();
     private static final List<Caching> caches = new ArrayList<>();
-
     private static HardwareMap hardwareMap;
     private static List<LynxModule> hubs;
+    private static LynxModule controlHub;
+    private static LynxModule expansionHub;
 
     public static void init(HardwareMap hardwareMap) {
         Hardware.hardwareMap = hardwareMap;
@@ -38,10 +42,20 @@ public class Hardware {
         touchSensors.clear();
         potentiometers.clear();
         analogInputs.clear();
+        ledIndicators.clear();
+        limelight3As.clear();
 
         hubs.forEach(hub ->
-            hub.setBulkCachingMode(LynxModule.BulkCachingMode.AUTO)
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
         );
+
+        hubs.forEach(hub -> {
+            if(hub.isParent()){
+                controlHub = hub;
+            } else {
+                expansionHub = hub;
+            }
+        });
     }
 
     public static List<LynxModule> getHubs() {
@@ -61,6 +75,21 @@ public class Hardware {
         cameras.add(camera);
         devices.add(camera);
         return camera;
+    }
+
+    public static SmartLimelight3A getLimelight(String name) {
+        assertInitialized();
+
+        Optional<SmartLimelight3A> limelightOptional = getDevice(SmartLimelight3A.class, name);
+        if (limelightOptional.isPresent()){
+            return limelightOptional.get();
+        }
+
+        SmartLimelight3A smartLimelight3A = new SmartLimelight3A(name, hardwareMap.get(Limelight3A.class, name));
+        limelight3As.add(smartLimelight3A);
+        devices.add(smartLimelight3A);
+        caches.add(smartLimelight3A);
+        return smartLimelight3A;
     }
 
     /**
@@ -95,6 +124,10 @@ public class Hardware {
     }
 
     public static SmartColorSensor getColorSensor(String name) {
+        return getColorSensor(name, ColorMatchConfig.frontProfile());
+    }
+
+    public static SmartColorSensor getColorSensor(String name, ColorMatchConfig.ColorMatchProfile colorProfile) {
         assertInitialized();
 
         Optional<SmartColorSensor> colorSensorOptional = getDevice(SmartColorSensor.class, name);
@@ -102,7 +135,11 @@ public class Hardware {
             return colorSensorOptional.get();
         }
         
-        SmartColorSensor smartColorSensor =  new SmartColorSensor(hardwareMap.get(NormalizedColorSensor.class, name), name);
+        SmartColorSensor smartColorSensor =  new SmartColorSensor(
+                hardwareMap.get(NormalizedColorSensor.class, name),
+                name,
+                colorProfile
+        );
         colorSensors.add(smartColorSensor);
         devices.add(smartColorSensor);
         caches.add(smartColorSensor);
@@ -122,6 +159,20 @@ public class Hardware {
         devices.add(servo);
         caches.add(servo);
         return servo;
+    }
+
+    public static SmartLEDIndicator getLEDIndicator(String name) {
+        assertInitialized();
+
+        Optional<SmartLEDIndicator> indicatorOptional = getDevice(SmartLEDIndicator.class, name);
+        if (indicatorOptional.isPresent()) {
+            return indicatorOptional.get();
+        }
+
+        SmartLEDIndicator indicator = new SmartLEDIndicator(getServo(name));
+        ledIndicators.add(indicator);
+        devices.add(indicator);
+        return indicator;
     }
 
     public static SmartTouchSensor getTouchSensor(String name){
@@ -203,6 +254,15 @@ public class Hardware {
     public static void invalidateCaches() {
         assertInitialized();
         caches.forEach(Caching::invalidateCache);
+        hubs.forEach(LynxModule::clearBulkCache);
+    }
+
+    public static LynxModule getControlHub(){
+        return controlHub;
+    }
+
+    public static LynxModule getExpansionHub(){
+        return expansionHub;
     }
 
     public static void setCachingStrategy(Caching.Strategy strategy){

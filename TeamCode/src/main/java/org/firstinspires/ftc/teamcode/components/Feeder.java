@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.components;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartPotentiometer;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
 
@@ -24,10 +23,6 @@ public class Feeder {
 
         this.servo = servo;
         this.potentiometer = potentiometer;
-
-        OpModeCore.getTelemetry().addLine("Feeder")
-                .addData("Current Angle", this::getCurrentPosition)
-                .addData("Target Angle", this::getTargetPosition);
     }
 
     /**

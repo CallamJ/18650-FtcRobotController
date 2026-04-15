@@ -18,6 +18,7 @@ public class SimpleTeleOp extends TeleOpCore {
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
+    protected static Turret turret;
 
     @Override
     protected void initialize(){
@@ -62,6 +63,12 @@ public class SimpleTeleOp extends TeleOpCore {
             collector = new Collector(Hardware.getMotor("collectorMotor"));
         } catch (Exception e) {
             prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
+            turret = new Turret(Hardware.getMotor("turretMotor"), Hardware.getMotor("turretMotor").getEncoder());
+        } catch (Exception e) {
+            prettyTelem.error("Turret failed to initialize, skipping: " + e.getMessage());
         }
     }
 
@@ -117,6 +124,10 @@ public class SimpleTeleOp extends TeleOpCore {
                     collector.setPower(reversePower);
                 }
             }
+        }
+
+        if(turret != null){
+            turret.setTargetPosition(turret.getCurrentPosition() + gamepad1.rightTrigger - gamepad1.leftTrigger);
         }
     }
 

@@ -127,6 +127,11 @@ public class PID implements ControlAlgorithm {
         return result;
     }
 
+    @Override
+    public boolean isBusy() {
+        return isBusy;
+    }
+
     public double pResult(){
         return pResult;
     }
@@ -175,8 +180,9 @@ public class PID implements ControlAlgorithm {
             this.tolerance = tolerance;
             return this;
         }
-        public void  setDirectionalKF(boolean directionalKF) {
+        public Builder setDirectionalKF(boolean directionalKF) {
             this.directionalKF = directionalKF;
+            return this;
         }
 
         public PID build() { return new PID(kP, kI, kD, kF, tolerance,  directionalKF); }

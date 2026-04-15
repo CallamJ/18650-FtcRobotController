@@ -14,6 +14,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.internal.camera.delegating.SwitchableCameraName;
 import org.firstinspires.ftc.robotcore.internal.system.Deadline;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
+import org.firstinspires.ftc.vision.opencv.ImageRegion;
+import org.firstinspires.ftc.vision.opencv.PredominantColorProcessor;
 
 public class SmartCamera extends Device implements CameraName {
     private final CameraName cameraName;
@@ -52,6 +54,22 @@ public class SmartCamera extends Device implements CameraName {
 
     public Pose getPose(){
         return pose;
+    }
+
+    public SmartCameraColorSensor asColorSensor() {
+        return new SmartCameraColorSensor(this, ColorMatchConfig.frontProfile());
+    }
+
+    public SmartCameraColorSensor asColorSensor(
+            ColorMatchConfig.ColorMatchProfile colorProfile,
+            ImageRegion roi,
+            PredominantColorProcessor.Swatch... swatches
+    ) {
+        return new SmartCameraColorSensor(this, colorProfile, roi, swatches);
+    }
+
+    public SmartCameraColorSensor asColorSensor(ColorMatchConfig.ColorMatchProfile colorProfile) {
+        return new SmartCameraColorSensor(this, colorProfile);
     }
 
     public Size getResolution(){

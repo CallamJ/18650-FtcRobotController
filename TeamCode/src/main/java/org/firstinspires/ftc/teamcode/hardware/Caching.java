@@ -11,7 +11,7 @@ public interface Caching {
 
     enum Strategy {
         /**
-         * When the cache is updated, the first read is from the cache. The second read will invalidate the cache and update the cache before reading..
+         * When the cache is updated, the first read is from the cache. The second read will invalidate the cache and update the cache before reading.
          */
         INVALID_AFTER_FIRST_READ,
         /**
@@ -21,6 +21,11 @@ public interface Caching {
         /**
          * After the cache is updated, all reads will read from the cache (similar to VALID_UNTIL_INVALIDATED). When the cache is invalidated the cache is automatically updated.
          */
-        UPDATE_WHEN_INVALIDATED
+        UPDATE_WHEN_INVALIDATED,
+
+        /**
+         * Always update the cache before it is read, essentially equivalent to not caching.
+         */
+        ALWAYS_UPDATE
     }
 }

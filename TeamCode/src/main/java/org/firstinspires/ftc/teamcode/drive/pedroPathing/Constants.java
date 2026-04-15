@@ -16,13 +16,15 @@ import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 
 @Configurable
 public class Constants {
+    public static double DEFAULT_MAX_POWER = 1.0;
+
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(11);
+            .mass(13.35);
 
     public static PinpointConstants pinpointConstants = new PinpointConstants()
             .hardwareMapName("pinpoint")
             .distanceUnit(DistanceUnit.INCH)
-            .strafePodX(-7.5)
+            .strafePodX(-6.75)
             .forwardPodY(4.5)
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
@@ -39,7 +41,12 @@ public class Constants {
             .rightFrontMotorName("RFront")
             .leftRearMotorName("LRear")
             .rightRearMotorName("RRear")
-            .maxPower(1);
+            .maxPower(DEFAULT_MAX_POWER);
+
+    public static void setMecanumMaxPower(double maxPower) {
+        double clamped = Math.max(0.0, Math.min(1.0, maxPower));
+        mecanumConstants.maxPower(clamped);
+    }
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         PinpointLocalizer localizer = new PinpointLocalizer(hardwareMap, pinpointConstants);

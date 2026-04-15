@@ -2,11 +2,12 @@ package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import org.firstinspires.ftc.teamcode.core.OpModeCore;
+import org.firstinspires.ftc.robotcore.external.navigation.VoltageUnit;
+import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
-import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
-import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.hardware.controllers.VelocityPID;
+import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
+import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 
 @Configurable
 public class Launcher {
@@ -14,7 +15,9 @@ public class Launcher {
 
     private final VelocityPID controller;
 
-    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.0004, tolerance = 30;
+    public static double kP = 0.001, kI = 0, kD = 0, kF = 0.00035, kV = 0.03, tolerance = 30;
+    public static double maxVoltage = 14;
+    private final DataFilter voltageFilter = new RollingAverage(100);
 
     public static float ticksPerDegree = (288f/360f);
 
@@ -30,16 +33,12 @@ public class Launcher {
                 .setKF(() -> kF)
                 .setTolerance(tolerance)
                 .build();
-
-        OpModeCore.getTelemetry().addLine("Launcher")
-                .addData("Current Velocity", this::getVelocity)
-                .addData("Target Velocity", this::getTargetVelocity)
-                .addData("Power", this::getPower)
-                .addData("PID Result", controller::result);
     }
 
     public void tick(){
-        motor.setPower(controller.calcWithVelocity(targetVelocity, getVelocity()));
+        double result = controller.calcWithVelocity(targetVelocity, getVelocity());
+        double voltageCompensation = targetVelocity != 0 ? (maxVoltage - voltageFilter.compute(Hardware.getControlHub().getInputVoltage(VoltageUnit.VOLTS))) * kV : 0;
+        motor.setPower(result + voltageCompensation);
     }
 
     public void setTargetVelocity(double targetVelocity) {
@@ -56,6 +55,10 @@ public class Launcher {
 
     public double getPower() {
         return motor.getPower();
+    }
+
+    public double getPidResult() {
+        return controller.result();
     }
 
     public void stop() {

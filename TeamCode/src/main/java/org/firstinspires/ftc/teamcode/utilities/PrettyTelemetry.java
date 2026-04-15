@@ -32,7 +32,7 @@ public class PrettyTelemetry {
     //todo: Integrate this better with the Panels native telemetry. we probably do not need this special adaptation for Panels like we did with RR
     private final List<String> dashValueCaptions = new ArrayList<>();
     private final List<Func<?>> dashValueProducers = new ArrayList<>();
-    private final Line logLine;
+    private Line logLine;
     private String logs = "<i>There are no logs yet...</i>";
 
     /**
@@ -43,10 +43,17 @@ public class PrettyTelemetry {
     public PrettyTelemetry(Telemetry telemetry){
         this.telemetry = telemetry;
         this.roundingPlaces = 3;
+        configureTelemetryDefaults();
+        recreateLogLine();
+    }
+
+    private void configureTelemetryDefaults() {
         telemetry.setAutoClear(false);
         telemetry.setDisplayFormat(Telemetry.DisplayFormat.HTML);
         telemetry.setItemSeparator("");
+    }
 
+    private void recreateLogLine() {
         this.logLine = addLine("Logs");
         logLine.addData("Log Entries", () -> logs);
     }
@@ -269,6 +276,18 @@ public class PrettyTelemetry {
     }
 
     /**
+     * Clears all telemetry lines/items and recreates the default PrettyTelemetry layout.
+     * Existing in-memory logs are kept.
+     */
+    public void resetLayout() {
+        telemetry.clearAll();
+        configureTelemetryDefaults();
+        dashValueCaptions.clear();
+        dashValueProducers.clear();
+        recreateLogLine();
+    }
+
+    /**
      * Check if a log entry should be displayed based on level and time filters
      */
     private boolean shouldShowLogEntry(LogEntry entry) {
@@ -371,11 +390,13 @@ public class PrettyTelemetry {
 
         telemetry.update();
 
-        for (int i = 0; i < dashValueCaptions.size(); i++) {
-            panelsTelemetry.addData(dashValueCaptions.get(i), dashValueProducers.get(i).value());
-        }
+        if (panelsTelemetry != null) {
+            for (int i = 0; i < dashValueCaptions.size(); i++) {
+                panelsTelemetry.addData(dashValueCaptions.get(i), dashValueProducers.get(i).value());
+            }
 
-        panelsTelemetry.update();
+            panelsTelemetry.update();
+        }
     }
 
 
@@ -387,18 +408,16 @@ public class PrettyTelemetry {
      * @return A wrapped `Func<?>` that applies rounding to numerical values.
      */
     public static <T> Func<?> wrapFunc(Func<T> valueProducer){
-        T value = valueProducer.value();
-        if(value instanceof Double){
-	        //noinspection unchecked
-	        Func<Double> doubleProducer = (Func<Double>) valueProducer;
-            return () -> roundToPrecision(doubleProducer.value(), 3);
-        } else if (value instanceof Float) {
-            //noinspection unchecked
-            Func<Float> floatProducer = (Func<Float>) valueProducer;
-            return () -> roundToPrecision(floatProducer.value(), 3);
-        }else{
-            return valueProducer;
-        }
+        return () -> {
+            T value = valueProducer.value();
+            if (value instanceof Double) {
+                return roundToPrecision((Double) value, 3);
+            } else if (value instanceof Float) {
+                return roundToPrecision((Float) value, 3);
+            } else {
+                return value;
+            }
+        };
     }
 
     /**

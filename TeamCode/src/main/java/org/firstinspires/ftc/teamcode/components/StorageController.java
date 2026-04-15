@@ -1,27 +1,28 @@
 package org.firstinspires.ftc.teamcode.components;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
+import org.firstinspires.ftc.teamcode.hardware.ScoringColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
-import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
+import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.utilities.ChainedFuture;
-import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
 @Configurable
 public class StorageController {
+    public static int requiredConsecutiveContentReads = 3;
+
     private final Feeder feeder;
     private final Indexer indexer;
     private final Collector collector;
-    private final SmartColorSensor frontSensor;
+    private final ScoringColorSensor frontSensor;
     private final Queue<Task> taskQueue;
     private Task activeTask;
     private State state;
-    private final Servo leftLED, rightLED, frontLED;
+    private final SmartLEDIndicator leftLED, rightLED, frontLED;
     private boolean isJamCorrecting = false;
 
     /**
@@ -37,15 +38,17 @@ public class StorageController {
      * If auto-advance triggers to move a slot away from the front, or the indexer is otherwise bumped it flags it as no longer fresh.
      */
     private boolean isFrontFresh;
+    private ScoringElementColor lastFrontDetection = ScoringElementColor.NONE;
+    private int frontDetectionStreak = 0;
 
     public StorageController(
             Feeder feeder,
             Indexer indexer,
             Collector collector,
-            SmartColorSensor frontSensor,
-            Servo leftLED,
-            Servo rightLED,
-            Servo frontLED
+            ScoringColorSensor frontSensor,
+            SmartLEDIndicator leftLED,
+            SmartLEDIndicator rightLED,
+            SmartLEDIndicator frontLED
     ) {
         this.feeder = feeder;
         this.indexer = indexer;
@@ -58,23 +61,51 @@ public class StorageController {
         this.leftLED = leftLED;
         this.rightLED = rightLED;
         this.frontLED = frontLED;
+    }
 
-        PrettyTelemetry.Item item = OpModeCore.getTelemetry().addLine("Storage Controller")
-                .addData("State", () -> this.state.toString())
-                .addData("Front Content", this::getFrontContent)
-                .addData("Right Content", this::getRightContent)
-                .addData("Left Content", this::getLeftContent)
-                .addData("Indexer Velocity", indexer::getVelocity)
-                .addData("Active Task", () -> this.activeTask == null ? "None" : this.activeTask.toString())
-                .addData("Is Jam Correcting", () -> isJamCorrecting)
-                .addData("Jam Timer", () -> timer.milliseconds())
-                .addData("Task Queue", taskQueue::toString);
+    private ScoringElementColor getFrontDetection() {
+        return frontSensor.getScoringElementColor();
+    }
 
-        OpModeCore.getTelemetry().addLine("Color Sensor")
-                .addData("Sensor Color", frontSensor::getScoringElementColor)
-                .addData("Sensor Hue", () -> frontSensor.getHSV()[0])
-                .addData("Sensor Saturation", () -> frontSensor.getHSV()[1])
-                .addData("Sensor Value", () -> frontSensor.getHSV()[2]);
+    public String getFrontClosestColorMatch() {
+        return frontSensor.getClosestColorMatchName();
+    }
+
+    public String getFrontSensorColorName() {
+        ScoringElementColor color = getFrontDetection();
+        return color == null ? "NONE" : color.name();
+    }
+
+    public float getFrontSensorHue() {
+        return frontSensor.getHSV()[0];
+    }
+
+    public float getFrontSensorSaturation() {
+        return frontSensor.getHSV()[1];
+    }
+
+    public float getFrontSensorValue() {
+        return frontSensor.getHSV()[2];
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public String getActiveTaskName() {
+        return activeTask == null ? "None" : activeTask.toString();
+    }
+
+    public boolean isJamCorrecting() {
+        return isJamCorrecting;
+    }
+
+    public double getJamTimerMs() {
+        return jamTimer.milliseconds();
+    }
+
+    public String getTaskQueueSummary() {
+        return taskQueue.toString();
     }
 
     public void bumpIndexerZero(double bumpVal){
@@ -88,13 +119,13 @@ public class StorageController {
         applyContentColor(rightLED, getRightContent());
         applyContentColor(frontLED, getFrontContent());
 
-        //checkForIndexerJam();
+        checkForIndexerJam();
 
-//        if(isJamCorrecting && !indexer.isBusy()){
-//            this.isJamCorrecting = false;
-//            indexer.setTargetIndex(lastTarget);
-//            return;
-//        }
+        if(isJamCorrecting && (!indexer.isBusy() || activeJamTimer.milliseconds() > 1000)){
+            this.isJamCorrecting = false;
+            indexer.setTargetIndex(lastTarget);
+            return;
+        }
 
         switch(state){
             case RESTING: {
@@ -136,8 +167,11 @@ public class StorageController {
                         if(feeder.triggerFuture != null && feeder.triggerFuture.get() < 2000){
                             setLeftContent(SlotContent.OPEN);
                         }
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        OpModeCore.getTelemetry().warning("Feeder trigger wait interrupted; continuing.");
+                    } catch (ExecutionException e) {
+                        OpModeCore.getTelemetry().error("Feeder trigger future failed: " + e.getMessage());
                     }
                 }
                 break;
@@ -147,7 +181,21 @@ public class StorageController {
     }
 
     public void updateIndexerContent(){
-        ScoringElementColor detectedColor = frontSensor.getScoringElementColor();
+        ScoringElementColor detectedColor = getFrontDetection();
+        if (detectedColor == null) {
+            detectedColor = ScoringElementColor.NONE;
+        }
+        if (detectedColor == lastFrontDetection) {
+            frontDetectionStreak++;
+        } else {
+            lastFrontDetection = detectedColor;
+            frontDetectionStreak = 1;
+        }
+
+        if (frontDetectionStreak < Math.max(1, requiredConsecutiveContentReads)) {
+            return;
+        }
+
         switch (detectedColor) {
             case GREEN: {
                 if(getFrontContent() == SlotContent.OPEN){
@@ -168,6 +216,36 @@ public class StorageController {
                 break;
             }
         }
+//        detectedColor = rightSensor.getScoringElementColor();
+//        switch (detectedColor) {
+//            case GREEN: {
+//                setRightContent(SlotContent.GREEN);
+//                break;
+//            }
+//            case PURPLE: {
+//                setRightContent(SlotContent.PURPLE);
+//                break;
+//            }
+//            case NONE: {
+//                setRightContent(SlotContent.OPEN);
+//                break;
+//            }
+//        }
+//        detectedColor = leftSensor.getScoringElementColor();
+//        switch (detectedColor) {
+//            case GREEN: {
+//                setLeftContent(SlotContent.GREEN);
+//                break;
+//            }
+//            case PURPLE: {
+//                setLeftContent(SlotContent.PURPLE);
+//                break;
+//            }
+//            case NONE: {
+//                setLeftContent(SlotContent.OPEN);
+//                break;
+//            }
+//        }
     }
 
     public void checkTasks(){
@@ -335,36 +413,38 @@ public class StorageController {
         indexerContent[(indexer.getNormalizedCurrentIndex() + 1) % 3] = content;
     }
 
-    private void applyContentColor(Servo led, SlotContent content){
+    private void applyContentColor(SmartLEDIndicator led, SlotContent content){
         switch(content){
             case OPEN: {
-                led.setPosition(1);
+                led.setColor(SmartLEDIndicator.IndicatorColor.WHITE);
                 break;
             }
             case GREEN: {
-                led.setPosition(0.5);
+                led.setColor(SmartLEDIndicator.IndicatorColor.GREEN);
                 break;
             }
             case PURPLE: {
-                led.setPosition(0.7);
+                led.setColor(SmartLEDIndicator.IndicatorColor.VIOLET);
                 break;
             }
         }
     }
 
-    private ElapsedTime timer = new ElapsedTime();
+    private ElapsedTime jamTimer = new ElapsedTime();
+    private ElapsedTime activeJamTimer = new ElapsedTime();
     private long lastTarget = 0;
     private void checkForIndexerJam(){
         if(indexer.isBusy() && Math.abs(indexer.getVelocity()) <= 25 && !isJamCorrecting){
-            if(timer.milliseconds() > 300){
-                timer.reset();
+            if(jamTimer.milliseconds() > 300){
+                jamTimer.reset();
+                activeJamTimer.reset();
                 lastTarget = indexer.getTargetIndex();
                 long lastCurrent = indexer.getCurrentIndex();
                 indexer.setTargetIndex(lastCurrent);
                 isJamCorrecting = true;
             }
         } else {
-            timer.reset();
+            jamTimer.reset();
         }
     }
 
