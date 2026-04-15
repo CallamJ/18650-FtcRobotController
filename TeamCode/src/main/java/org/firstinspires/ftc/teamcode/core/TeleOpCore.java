@@ -2,11 +2,17 @@ package org.firstinspires.ftc.teamcode.core;
 
 import com.qualcomm.robotcore.hardware.Gamepad;
 
+/**
+ * Base class for tele-operated op modes that need stable edge-triggered gamepad handling.
+ */
 public abstract class TeleOpCore extends OpModeCore {
 
 	protected final Gamepad previousGamepad1 = new Gamepad();
 	protected final Gamepad previousGamepad2 = new Gamepad();
 
+	/**
+	 * Captures the starting controller state so button edge detection is valid on the first loop.
+	 */
 	@Override
 	protected void onInitialize(){
 		//save the current gamepad states to compare against to avoid errors
@@ -14,12 +20,20 @@ public abstract class TeleOpCore extends OpModeCore {
 		previousGamepad2.copy(gamepad2);
 	}
 
+	/**
+	 * Processes gamepad transitions before running the shared framework tick behavior.
+	 * Overrides of this method must call {@code super.frameworkTick()}.
+	 */
 	@Override
-	protected void beforeTick() {
+	protected void frameworkTick() {
 		checkGamepads();
+		super.frameworkTick();
 	}
 
-	//this might be moved to a separate class
+	/**
+	 * Snapshots controller state, wraps it in {@link SmartGamepad}, dispatches to the subclass,
+	 * then stores the current state for the next tick's edge detection.
+	 */
 	private void checkGamepads() {
 		//store the current game pads since this state can change while in a check cycle
 		Gamepad gamepad1Base = new Gamepad();

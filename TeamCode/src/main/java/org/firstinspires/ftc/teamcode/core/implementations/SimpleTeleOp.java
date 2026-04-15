@@ -130,7 +130,7 @@ public class SimpleTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void onTickAfterFramework(){
+    protected void onTick(){
         if(feeder != null){
             feeder.tick();
         }

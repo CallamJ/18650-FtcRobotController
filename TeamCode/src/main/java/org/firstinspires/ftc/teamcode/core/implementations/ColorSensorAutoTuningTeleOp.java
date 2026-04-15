@@ -170,7 +170,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void onTickBeforeFramework() {
+    protected void beforeTick() {
         if (indexer != null) {
             indexer.tick();
         }

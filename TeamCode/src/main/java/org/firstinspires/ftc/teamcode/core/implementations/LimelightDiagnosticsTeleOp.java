@@ -114,7 +114,7 @@ public class LimelightDiagnosticsTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void onTickBeforeFramework() {
+    protected void beforeTick() {
         if (limelightReady && limelight != null && limelightRunning) {
             updateDetectionSnapshot();
         }

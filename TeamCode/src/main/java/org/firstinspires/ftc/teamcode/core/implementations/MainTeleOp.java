@@ -371,12 +371,12 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void onTickBeforeFramework(){
+    protected void beforeTick(){
         tickTimer.reset();
     }
 
     @Override
-    protected void onTickAfterFramework(){
+    protected void onTick(){
         if(storageController != null){
             storageController.tick();
         }

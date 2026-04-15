@@ -469,7 +469,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     @Override
-    protected void onTickAfterFramework() {
+    protected void onTick() {
         runObeliskAcquisitionAssist();
 
         if (storageController != null) {
