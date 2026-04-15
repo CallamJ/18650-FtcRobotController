@@ -21,10 +21,8 @@ public class SimpleTeleOp extends TeleOpCore {
     protected static Turret turret;
 
     @Override
-    protected void initialize(){
+    protected void onInitialize(){
         //noinspection DuplicatedCode
-
-        super.initialize();
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
@@ -132,8 +130,7 @@ public class SimpleTeleOp extends TeleOpCore {
     }
 
     @Override
-    public void tick(){
-        super.tick();
+    protected void onTickAfterFramework(){
         if(feeder != null){
             feeder.tick();
         }

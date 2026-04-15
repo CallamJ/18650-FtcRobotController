@@ -31,8 +31,7 @@ public class Blue1VolleyFarAuto extends AutoOpBase {
     public static double FORWARD_AFTER_VOLLEY_TIMEOUT_SEC = 4.0;
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
         if (storageController != null) {
             storageController.setLeftContent(StorageController.SlotContent.PURPLE);
             storageController.setRightContent(StorageController.SlotContent.GREEN);

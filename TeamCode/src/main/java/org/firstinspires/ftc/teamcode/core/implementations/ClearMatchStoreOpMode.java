@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 @TeleOp(name = "9 - Clear Match Store")
 public class ClearMatchStoreOpMode extends OpModeCore {
     @Override
-    protected void run() {
+    protected void onRun() {
         MatchStateStore.clear();
         prettyTelem.info("Match state store cleared.");
         prettyTelem.addData("Status", ()-> "Cleared");

@@ -17,10 +17,8 @@ public class ServoTester extends TeleOpCore {
     private SmartServo servo;
 
     @Override
-    protected void initialize(){
+    protected void onInitialize(){
         //noinspection DuplicatedCode
-
-        super.initialize();
 
         servo = Hardware.getServo("hoodServo");
         telemetry.addData("Target", servo::getPosition);
@@ -31,8 +29,4 @@ public class ServoTester extends TeleOpCore {
         servo.setPosition(gamepad1.leftTrigger);
     }
 
-    @Override
-    public void tick(){
-        super.tick();
-    }
 }

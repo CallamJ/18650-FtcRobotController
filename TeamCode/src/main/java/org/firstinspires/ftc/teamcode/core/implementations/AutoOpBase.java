@@ -197,8 +197,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
         resetSubsystemReferences();
         allianceColor = getAutonomousAllianceColor();
         lastMatchStateSaveMs = 0;
@@ -318,7 +317,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     @Override
-    protected final void run() {
+    protected final void onRun() {
         List<StepSpec> plan = buildPlan();
         if (plan == null || plan.isEmpty()) {
             activeStepName = "None";
@@ -470,8 +469,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     @Override
-    public void tick() {
-        super.tick();
+    protected void onTickAfterFramework() {
         runObeliskAcquisitionAssist();
 
         if (storageController != null) {

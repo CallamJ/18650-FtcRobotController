@@ -8,17 +8,15 @@ public abstract class TeleOpCore extends OpModeCore {
 	protected final Gamepad previousGamepad2 = new Gamepad();
 
 	@Override
-	protected void initialize(){
-		super.initialize();
+	protected void onInitialize(){
 		//save the current gamepad states to compare against to avoid errors
 		previousGamepad1.copy(gamepad1);
 		previousGamepad2.copy(gamepad2);
 	}
 
 	@Override
-	public void tick() {
+	protected void beforeTick() {
 		checkGamepads();
-		super.tick();
 	}
 
 	//this might be moved to a separate class

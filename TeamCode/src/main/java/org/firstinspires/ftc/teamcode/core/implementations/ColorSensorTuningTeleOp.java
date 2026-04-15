@@ -27,8 +27,7 @@ public class ColorSensorTuningTeleOp extends TeleOpCore {
     private boolean hasUnsavedChanges = false;
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
 
         frontLeftSensor = tryGetSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
         frontRightSensor = tryGetSensor(ColorMatchConfig.FRONT_SENSOR_NAME);

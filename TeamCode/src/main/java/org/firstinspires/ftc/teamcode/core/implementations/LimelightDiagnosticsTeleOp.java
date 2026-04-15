@@ -39,8 +39,7 @@ public class LimelightDiagnosticsTeleOp extends TeleOpCore {
     private String lastError = "none";
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
 
         try {
             limelight = Hardware.getLimelight(limelightName);
@@ -115,12 +114,10 @@ public class LimelightDiagnosticsTeleOp extends TeleOpCore {
     }
 
     @Override
-    public void tick() {
+    protected void onTickBeforeFramework() {
         if (limelightReady && limelight != null && limelightRunning) {
             updateDetectionSnapshot();
         }
-
-        super.tick();
     }
 
     private void setPipeline(int newPipeline) {

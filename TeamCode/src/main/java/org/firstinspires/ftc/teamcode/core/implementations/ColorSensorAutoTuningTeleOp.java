@@ -113,8 +113,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
     private boolean collectorAssistLatched = false;
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
 
         try {
             indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
@@ -144,7 +143,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void run() {
+    protected void onRun() {
         if (indexer == null || frontSensor == null || leftSensor == null || rightSensor == null) {
             setAllLeds(SmartLEDIndicator.IndicatorColor.RED);
             return;
@@ -171,11 +170,10 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
     }
 
     @Override
-    public void tick() {
+    protected void onTickBeforeFramework() {
         if (indexer != null) {
             indexer.tick();
         }
-        super.tick();
     }
 
     private void runTuneAndValidation() {
@@ -486,7 +484,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
             setAllLeds(SmartLEDIndicator.IndicatorColor.ORANGE);
         }
 
-        super.tick();
+        frameworkTick();
     }
 
     private void updateCollectorAssist() {
@@ -1101,7 +1099,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
             if (!gamepad1.a && !gamepad1.b && (!includeX || !gamepad1.x)) {
                 return true;
             }
-            super.tick();
+            frameworkTick();
             sleep(20);
         }
         return false;
@@ -1128,7 +1126,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
 
             previousA = currentA;
             previousB = currentB;
-            super.tick();
+            frameworkTick();
             sleep(20);
         }
         return false;
@@ -1161,7 +1159,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
             previousA = currentA;
             previousB = currentB;
             previousX = currentX;
-            super.tick();
+            frameworkTick();
             sleep(20);
         }
         return PostTuneChoice.CANCEL;

@@ -33,16 +33,41 @@ public abstract class OpModeCore extends LinearOpMode {
 		}
 	}
 
-	protected void initialize(){
+	protected final void initialize(){
 		Hardware.init(hardwareMap);
 		PersistentStorage.init(hardwareMap);
 		this.prettyTelem = new PrettyTelemetry(telemetry, PanelsTelemetry.INSTANCE.getFtcTelemetry());
+		onInitialize();
 	}
 
-	protected void run(){}
+	protected void onInitialize(){}
 
-	public void tick(){
+	protected final void run(){
+		onRun();
+	}
+
+	protected void onRun(){}
+
+	public final void tick(){
+		onTickBeforeFramework();
+		beforeTick();
+		doFrameworkTick();
+		onTickAfterFramework();
+	}
+
+	protected void onTickBeforeFramework(){}
+
+	protected void beforeTick(){}
+
+	protected void onTickAfterFramework(){}
+
+	protected void doFrameworkTick(){
 		simpleTick();
+	}
+
+	protected final void frameworkTick(){
+		beforeTick();
+		doFrameworkTick();
 	}
 
 	public static void simpleTick(){

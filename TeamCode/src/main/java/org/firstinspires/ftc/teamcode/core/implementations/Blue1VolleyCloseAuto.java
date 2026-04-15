@@ -16,8 +16,7 @@ public class Blue1VolleyCloseAuto extends AutoOpBase {
     private final Pose move = new Pose(29.5, 53.5, 0.65);
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
         if (storageController != null) {
             storageController.setLeftContent(StorageController.SlotContent.PURPLE);
             storageController.setRightContent(StorageController.SlotContent.GREEN);

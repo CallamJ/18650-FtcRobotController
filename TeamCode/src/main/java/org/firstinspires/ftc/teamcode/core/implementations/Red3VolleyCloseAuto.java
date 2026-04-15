@@ -63,8 +63,7 @@ public class Red3VolleyCloseAuto extends AutoOpBase {
     private boolean skipRemainingCycles = false;
 
     @Override
-    protected void initialize() {
-        super.initialize();
+    protected void onInitialize() {
         if (storageController != null) {
             storageController.setLeftContent(StorageController.SlotContent.PURPLE);
             storageController.setRightContent(StorageController.SlotContent.GREEN);

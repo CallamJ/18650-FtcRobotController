@@ -132,10 +132,8 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     @Override
-    protected void initialize(){
+    protected void onInitialize(){
         //noinspection DuplicatedCode
-
-        super.initialize();
         resetSubsystemReferences();
         startupSnapshot = MatchStateStore.getFreshSnapshot(Math.max(1000L, (long) matchStateFreshnessMs));
         allianceColor = startupSnapshot != null
@@ -373,10 +371,12 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     @Override
-    public void tick(){
+    protected void onTickBeforeFramework(){
         tickTimer.reset();
-        super.tick();
+    }
 
+    @Override
+    protected void onTickAfterFramework(){
         if(storageController != null){
             storageController.tick();
         }
