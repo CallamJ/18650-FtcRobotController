@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
-import org.firstinspires.ftc.teamcode.components.*;
+import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;

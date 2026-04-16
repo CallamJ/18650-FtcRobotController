@@ -6,7 +6,7 @@ import org.firstinspires.ftc.teamcode.utilities.Notifier;
 
 import java.util.function.Supplier;
 
-public class BangBangController implements ControlAlgorithm {
+public class BangBangController implements PositionControlAlgorithm {
     private final Notifier noLongerBusyNotifier = new Notifier();
     private boolean isBusy = false, lastIsBusy = false;
     private final Supplier<Double> tolerance;
@@ -31,7 +31,7 @@ public class BangBangController implements ControlAlgorithm {
     }
 
     @Override
-    public double calc(double target, double actual) {
+    public double calcPosition(double target, double actual) {
         double error = target - actual;
         if (!initialized) {
             initialized = true;
@@ -120,5 +120,35 @@ public class BangBangController implements ControlAlgorithm {
         this.velocityTolerance = velocityTolerance;
         this.brakeMargin = brakeMargin;
         this.filterFraction = filterFraction;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Supplier<Double> maxPower = () -> 0.0;
+        private Supplier<Double> maxDecel = () -> 0.0;
+        private Supplier<Double> tolerance = () -> 0.0;
+        private Supplier<Double> velocityTolerance = () -> 0.0;
+        private Supplier<Double> brakeMargin = () -> 0.0;
+        private Supplier<Double> filterFraction = () -> 0.0;
+
+        public Builder maxPower(double value) { this.maxPower = () -> value; return this; }
+        public Builder maxDecel(double value) { this.maxDecel = () -> value; return this; }
+        public Builder tolerance(double value) { this.tolerance = () -> value; return this; }
+        public Builder velocityTolerance(double value) { this.velocityTolerance = () -> value; return this; }
+        public Builder brakeMargin(double value) { this.brakeMargin = () -> value; return this; }
+        public Builder filterFraction(double value) { this.filterFraction = () -> value; return this; }
+        public Builder maxPower(Supplier<Double> value) { this.maxPower = value; return this; }
+        public Builder maxDecel(Supplier<Double> value) { this.maxDecel = value; return this; }
+        public Builder tolerance(Supplier<Double> value) { this.tolerance = value; return this; }
+        public Builder velocityTolerance(Supplier<Double> value) { this.velocityTolerance = value; return this; }
+        public Builder brakeMargin(Supplier<Double> value) { this.brakeMargin = value; return this; }
+        public Builder filterFraction(Supplier<Double> value) { this.filterFraction = value; return this; }
+
+        public BangBangController build() {
+            return new BangBangController(maxPower, maxDecel, tolerance, velocityTolerance, brakeMargin, filterFraction);
+        }
     }
 }

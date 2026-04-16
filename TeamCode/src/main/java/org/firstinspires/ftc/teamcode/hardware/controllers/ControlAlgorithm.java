@@ -8,8 +8,6 @@ public interface ControlAlgorithm {
 
     boolean isBusy();
 
-    double calc(double target, double actual);
-
     double result();
 
     void setTolerance(double tolerance);

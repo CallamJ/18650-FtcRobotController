@@ -7,7 +7,9 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.components.*;
+import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
@@ -39,7 +41,7 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static StorageController storageController;
     protected static Hood hood;
     protected static Turret turret;
-    protected static SimpleFCS fcs;
+    protected static FireControlSystem fcs;
     protected static SmartLimelight3A limelight;
     protected static SmartCameraColorSensor frontCameraSensor;
     public static boolean runFCS = true;
@@ -279,7 +281,7 @@ public abstract class AutoOpBase extends OpModeCore {
         try {
             if (turret != null && hood != null && launcher != null && limelight != null) {
                 SmartLEDIndicator launcherLED = Hardware.getLEDIndicator("launcherLED");
-                fcs = new SimpleFCS(
+                fcs = new FireControlSystem(
                         turret,
                         hood,
                         launcher,

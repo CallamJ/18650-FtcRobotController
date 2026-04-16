@@ -1,14 +1,15 @@
-package org.firstinspires.ftc.teamcode.components;
+package org.firstinspires.ftc.teamcode.components.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.core.OpModeCore;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Feeder;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 import org.firstinspires.ftc.teamcode.hardware.ScoringColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 
 @Configurable
 public class StorageController {

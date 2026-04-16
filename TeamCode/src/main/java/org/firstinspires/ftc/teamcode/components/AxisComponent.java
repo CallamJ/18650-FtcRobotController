@@ -4,88 +4,55 @@ import org.firstinspires.ftc.teamcode.hardware.controllers.ControlAlgorithm;
 import org.firstinspires.ftc.teamcode.utilities.Notifier;
 
 /**
- * Represents a controllable degree of motion component, allowing position-based movement
- * using a controller. This abstract class provides the basic structure for components
- * that need to move to a target position while using a control algorithm.
+ * Generic closed-loop actuator axis driven by a {@link ControlAlgorithm}.
  */
-public abstract class AxisComponent {
-	/** The control algorithm used to adjust movement. */
-	protected final ControlAlgorithm controller;
+public abstract class AxisComponent extends ActuatorComponent {
+    protected final ControlAlgorithm controller;
+    public final Notifier noLongerBusyNotifier;
 
-	/** The target position the component is trying to reach. */
-	private double target;
+    protected AxisComponent(ControlAlgorithm controller) {
+        this.controller = controller;
+        this.noLongerBusyNotifier = controller.getNoLongerBusyNotifier();
+    }
 
-	/** Notifier used to signal when the component is no longer busy. Will wake waiting threads when the component goes from {@code isBusy==true} to {@code isBusy==false}*/
-	public final Notifier noLongerBusyNotifier;
+    @Override
+    public final void tick() {
+        double target = getTargetValue();
+        double current = getCurrentValue();
+        double output = calculateOutput(target, current);
+        applyOutput(output, target, current);
+    }
 
-	/**
-	 * Constructs an AxisComponent with a specified control algorithm.
-	 *
-	 * @param controller the controller used for this component.
-	 */
-	protected AxisComponent(ControlAlgorithm controller) {
-		this.controller = controller;
-		this.noLongerBusyNotifier = controller.getNoLongerBusyNotifier();
-	}
+    public final double getTargetValue() {
+        return readTargetValue();
+    }
 
-	/**
-	 * Runs a control loop cycle, updating the PID controller and checking
-	 * if the movement is complete. If movement has stopped, it notifies waiting threads.
-	 *
-	 * @implNote This method calls {@link #tickPIDF()} to update the PID controller.
-	 * If the controller reaches zero output, it notifies waiting threads.
-	 */
-	public void tick() {
-		tickPIDF();
-	}
+    public final double getCurrentValue() {
+        return readCurrentValue();
+    }
 
-	/**
-	 * Method that must be implemented to update the PID controller
-	 * and adjust the component's movement.
-	 *
-	 * @implSpec Subclasses must implement this method to update the PID controller
-	 * and apply necessary adjustments to the component.
-	 */
-	protected abstract void tickPIDF();
+    protected abstract double calculateOutput(double target, double current);
 
-	/**
-	 * Gets the current position of the component.
-	 *
-	 * @return the current position.
-	 * @implSpec must return an accurate guess of the actual position in the units the control algorithm is tuned for.
-	 */
-	public abstract double getCurrentPosition();
+    protected abstract double readTargetValue();
 
-	/**
-	 * Retrieves the target position the component is trying to reach.
-	 *
-	 * @return the target position.
-	 */
-	public double getTargetPosition() {
-		return target;
-	}
+    protected abstract double readCurrentValue();
 
-	/**
-	 * Determines whether the component is still moving toward its target position.
-	 *
-	 * @return true if the component has not yet reached its target, false otherwise.
-	 */
-	public boolean isBusy() {
-		return Math.abs(getTargetPosition() - getCurrentPosition()) >= controller.getTolerance();
-	}
+    protected abstract void applyOutput(double output, double target, double current);
 
-	/**
-	 * Sets the target position for the component but does not actively move it.
-	 * Will lazily move to the target position when {@link AxisComponent#tick()} is called.
-	 * You must call {@link AxisComponent#tick()} often to reach the destination properly.
-	 *
-	 * @param position the desired target position.
-	 */
-	public void setTargetPosition(double position) {
-		target = position;
-	}
+    public final double getValueError() {
+        return getTargetValue() - getCurrentValue();
+    }
 
-	 public double getPower(){
-		return controller.result();
-	 }
+    public boolean isBusy() {
+        return Math.abs(getValueError()) >= getBusyTolerance();
+    }
+
+    protected double getBusyTolerance() {
+        return controller.getTolerance();
+    }
+
+    @Override
+    public double getPower() {
+        return controller.result();
+    }
 }

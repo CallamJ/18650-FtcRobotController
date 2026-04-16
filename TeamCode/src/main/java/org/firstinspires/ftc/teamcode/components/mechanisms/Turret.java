@@ -1,15 +1,15 @@
-package org.firstinspires.ftc.teamcode.components;
+package org.firstinspires.ftc.teamcode.components.mechanisms;
 
 import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.teamcode.components.MotorPositionAxisComponent;
 import org.firstinspires.ftc.teamcode.hardware.SmartEncoder;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Configurable
-public class Turret extends AxisComponent {
+public class Turret extends MotorPositionAxisComponent {
     private final SmartEncoder encoder;
-    private final SmartMotor motor;
     public static double kP = 0.02, kI = 0, kD = 0.015, kF = 0, tolerance = 1;
     public static float ticksPerDegree = (8192f / 360f) * (88f / 20f);
     public static double minAngle = -720;
@@ -18,7 +18,8 @@ public class Turret extends AxisComponent {
 
     public Turret(SmartMotor motor, SmartEncoder encoder) {
         super(
-                new PID.Builder()
+                motor,
+                PID.builder()
                         .setKP(() -> kP)
                         .setKI(() -> kI)
                         .setKD(() -> kD)
@@ -27,7 +28,6 @@ public class Turret extends AxisComponent {
                         .setDirectionalKF(true)
                         .build()
         );
-        this.motor = motor;
         this.encoder = encoder;
         this.encoder.setDirection(Direction.REVERSE);
         this.encoder.reset();
@@ -35,35 +35,28 @@ public class Turret extends AxisComponent {
     }
 
     @Override
-    public void tick() {
-        tickPIDF();
-    }
-
-    @Override
-    protected void tickPIDF() {
-        controller.calc(getTargetPosition(), getCurrentPosition());
-
-        if(getTargetPosition() > getCurrentPosition()){
-            motor.setPower(Math.abs(controller.result()));
-        } else {
-            motor.setPower(Math.abs(controller.result()) * -1);
-        }
-
-    }
-
-    public double getDesiredTarget(){
-        return desiredTarget;
-    }
-
-    @Override
-    public void setTargetPosition(double position) {
-        super.setTargetPosition(clamp(position, minAngle, maxAngle));
-        desiredTarget = position;
+    protected double shapeMotorPower(double output, double target, double current) {
+        return target > current ? Math.abs(output) : -Math.abs(output);
     }
 
     @Override
     public double getCurrentPosition() {
         return encoder.getPosition() / ticksPerDegree;
+    }
+
+    @Override
+    public void setTargetPosition(double position) {
+        desiredTarget = position;
+        super.setTargetPosition(position);
+    }
+
+    @Override
+    protected double normalizeTargetPosition(double targetPosition) {
+        return clamp(targetPosition, minAngle, maxAngle);
+    }
+
+    public double getDesiredTarget(){
+        return desiredTarget;
     }
 
     public void bumpZero(int bumpTicks) {

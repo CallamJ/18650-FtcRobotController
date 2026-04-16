@@ -1,6 +1,10 @@
-package org.firstinspires.ftc.teamcode.components;
+package org.firstinspires.ftc.teamcode.components.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Hood;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Launcher;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Turret;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
@@ -8,7 +12,7 @@ import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
-public class SimpleFCS {
+public class FireControlSystem {
     public static double baseVelocity = 1400, kVDist = 390;
     public static double hoodBasePos = 0.53, kHoodDist = 0.1;
     public static boolean useDepotPoseFallbackWhenTagNotVisible = true;
@@ -33,11 +37,11 @@ public class SimpleFCS {
     public static double bearingToDepot = 0;
 
 
-    public SimpleFCS(Turret turret, Hood hood, Launcher launcher, SmartLimelight3A limelight, SmartLEDIndicator led) {
+    public FireControlSystem(Turret turret, Hood hood, Launcher launcher, SmartLimelight3A limelight, SmartLEDIndicator led) {
         this(turret, hood, launcher, limelight, led, null, null);
     }
 
-    public SimpleFCS(
+    public FireControlSystem(
             Turret turret,
             Hood hood,
             Launcher launcher,

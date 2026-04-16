@@ -5,7 +5,9 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.components.*;
+import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.CancelReason;
@@ -49,7 +51,7 @@ public class MainTeleOp extends TeleOpCore {
     protected static StorageController storageController;
     protected static SmartCameraColorSensor frontCameraSensor;
     protected static Hood hood;
-    protected static SimpleFCS fcs;
+    protected static FireControlSystem fcs;
     protected static SmartLimelight3A limelight;
     protected static Limelight3A limelight3A;
     protected ElapsedTime tickTimer = new ElapsedTime();
@@ -199,7 +201,7 @@ public class MainTeleOp extends TeleOpCore {
             limelight.setPipeline(0);
             limelight.start();
 
-            fcs = new SimpleFCS(
+            fcs = new FireControlSystem(
                     turret,
                     hood,
                     launcher,
@@ -549,7 +551,7 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Current Angle", () -> turret == null ? "n/a" : turret.getCurrentPosition())
                 .addData("Target Angle", () -> turret == null ? "n/a" : turret.getTargetPosition())
                 .addData("Power", () -> turret == null ? "n/a" : turret.getPower())
-                .addData("Bearing To Tag", () -> SimpleFCS.bearingToDepot);
+                .addData("Bearing To Tag", () -> FireControlSystem.bearingToDepot);
         prettyTelem.addLine("Storage Controller")
                 .addData("State", () -> storageController == null ? "UNKNOWN" : storageController.getState())
                 .addData("Front Content", () -> storageController == null ? "n/a" : storageController.getFrontContent())

@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.components;
+package org.firstinspires.ftc.teamcode.components.mechanisms;
 
 import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.hardware.SmartServo;

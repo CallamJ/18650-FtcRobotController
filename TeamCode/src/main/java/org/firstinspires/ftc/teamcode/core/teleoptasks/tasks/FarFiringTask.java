@@ -5,9 +5,9 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
-import org.firstinspires.ftc.teamcode.components.DriveBase;
-import org.firstinspires.ftc.teamcode.components.SimpleFCS;
-import org.firstinspires.ftc.teamcode.components.StorageController;
+import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
+import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.CancelReason;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TaskResult;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TeleOpTask;
@@ -93,7 +93,7 @@ public class FarFiringTask implements TeleOpTask {
     public void start(TeleOpTaskContext ctx) {
         Follower follower = requireFollower(ctx);
         StorageController storageController = requireStorage(ctx);
-        SimpleFCS fcs = requireFcs(ctx);
+        FireControlSystem fcs = requireFcs(ctx);
         if (storageController == null) {
             throw new IllegalStateException("Storage controller unavailable");
         }
@@ -171,7 +171,7 @@ public class FarFiringTask implements TeleOpTask {
                 return TaskResult.RUNNING;
             }
             case WAIT_FOR_FCS_READY: {
-                SimpleFCS fcs = requireFcs(ctx);
+                FireControlSystem fcs = requireFcs(ctx);
                 if (elapsed(ctx) > readyToFireTimeoutSec) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
@@ -197,7 +197,7 @@ public class FarFiringTask implements TeleOpTask {
             }
             case WAIT_FOR_FCS_READY_FOR_NEXT_LOAD: {
                 StorageController storageController = requireStorage(ctx);
-                SimpleFCS fcs = requireFcs(ctx);
+                FireControlSystem fcs = requireFcs(ctx);
                 if (storageController == null) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
@@ -307,8 +307,8 @@ public class FarFiringTask implements TeleOpTask {
         return ctx.storageController();
     }
 
-    private SimpleFCS requireFcs(TeleOpTaskContext ctx) {
-        SimpleFCS fcs = ctx.simpleFcs();
+    private FireControlSystem requireFcs(TeleOpTaskContext ctx) {
+        FireControlSystem fcs = ctx.simpleFcs();
         if (fcs == null) {
             throw new IllegalStateException("SimpleFCS unavailable");
         }

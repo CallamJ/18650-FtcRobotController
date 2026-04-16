@@ -4,7 +4,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import org.firstinspires.ftc.teamcode.components.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.List;

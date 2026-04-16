@@ -1,21 +1,21 @@
-package org.firstinspires.ftc.teamcode.components;
+package org.firstinspires.ftc.teamcode.components.mechanisms;
 
 import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.teamcode.components.MotorPositionAxisComponent;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Configurable
-public class Indexer extends AxisComponent {
+public class Indexer extends MotorPositionAxisComponent {
 
     public static double kP = 0.007, kI = 0, kD = 0.0075, kF = 0.0001, tolerance = 1, busyTolerance = 2.5;
     public static float ticksPerDegree = 8192f/360f;
-    private final SmartMotor motor;
-
 
     public Indexer(SmartMotor motor) {
         super(
-                new PID.Builder()
+                motor,
+                PID.builder()
                 .setKP(() -> kP)
                 .setKI(() -> kI)
                 .setKD(() -> kD)
@@ -24,17 +24,10 @@ public class Indexer extends AxisComponent {
                 .setDirectionalKF(true)
                 .build()
         );
-        this.motor = motor;
 
         motor.getEncoder().setDirection(Direction.REVERSE);
 
         motor.getEncoder().reset();
-    }
-
-    @Override
-    protected void tickPIDF() {
-        controller.calc(getTargetPosition(), getCurrentPosition());
-        motor.setPower(controller.result());
     }
 
     @Override

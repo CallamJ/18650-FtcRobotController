@@ -7,7 +7,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.components.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.ArrayList;

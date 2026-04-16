@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.hardware.controllers;
 
-import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.utilities.Direction;
-
 import java.util.function.DoubleSupplier;
 
 /**
@@ -12,14 +9,19 @@ import java.util.function.DoubleSupplier;
  * The key difference is that kF is used as a feedforward coefficient that gets multiplied
  * by the target velocity, rather than being a constant term.
  */
-public class VelocityPID extends PID {
+public class VelocityPID extends BasePIDController implements VelocityControlAlgorithm {
+    protected final DoubleSupplier kP, kI, kD, kF;
     private double lastPosition = 0;
     private double currentVelocity = 0;
     private boolean firstCalculation = true;
-    private final ElapsedTime velocityTimer = new ElapsedTime();
+    private final com.qualcomm.robotcore.util.ElapsedTime velocityTimer = new com.qualcomm.robotcore.util.ElapsedTime();
 
     protected VelocityPID(DoubleSupplier kP, DoubleSupplier kI, DoubleSupplier kD, DoubleSupplier kF, double tolerance) {
-        super(kP, kI, kD, kF, tolerance, false);
+        super(tolerance);
+        this.kP = kP;
+        this.kI = kI;
+        this.kD = kD;
+        this.kF = kF;
     }
 
     /**
@@ -46,7 +48,7 @@ public class VelocityPID extends PID {
             }
         }
 
-        return calcWithVelocity(targetVelocity, currentVelocity);
+        return calcVelocity(targetVelocity, currentVelocity);
     }
 
     /**
@@ -56,11 +58,11 @@ public class VelocityPID extends PID {
      * @param actualVelocity The actual measured velocity
      * @return The calculated motor power
      */
-    public double calcWithVelocity(double targetVelocity, double actualVelocity) {
+    @Override
+    public double calcVelocity(double targetVelocity, double actualVelocity) {
         return calc(targetVelocity, actualVelocity, kP.getAsDouble(), kI.getAsDouble(), kD.getAsDouble(), kF.getAsDouble());
     }
 
-    @Override
     protected double calc(double target, double actual, double kP, double kI, double kD, double kF) {
         double currentError = target - actual;
 
@@ -83,7 +85,7 @@ public class VelocityPID extends PID {
 
             double output = p + integral + d + f;
 
-            if (direction == Direction.REVERSE) {
+            if (direction == org.firstinspires.ftc.teamcode.utilities.Direction.REVERSE) {
                 output = -output;
             }
 
@@ -107,8 +109,7 @@ public class VelocityPID extends PID {
             isBusy = false;
         }
 
-        if (lastIsBusy && !isBusy)
-            noLongerBusyNotifier.notifyWaitingThreads();
+        notifyIfNoLongerBusy(lastIsBusy);
 
         return result;
     }
@@ -134,20 +135,13 @@ public class VelocityPID extends PID {
         velocityTimer.reset();
     }
 
-    public static class Builder {
-        private DoubleSupplier kP = () -> 0, kI = () -> 0, kD = () -> 0, kF = () -> 0;
-        private double tolerance;
+    public static Builder builder() {
+        return new Builder();
+    }
 
-        public Builder setKP(double kP) { this.kP = () -> kP; return this; }
-        public Builder setKI(double kI) { this.kI = () -> kI; return this; }
-        public Builder setKD(double kD) { this.kD = () -> kD; return this; }
-        public Builder setKF(double kF) { this.kF = () -> kF; return this; }
-        public Builder setKP(DoubleSupplier kP) { this.kP = kP; return this; }
-        public Builder setKI(DoubleSupplier kI) { this.kI = kI; return this; }
-        public Builder setKD(DoubleSupplier kD) { this.kD = kD; return this; }
-        public Builder setKF(DoubleSupplier kF) { this.kF = kF; return this; }
-        public Builder setTolerance(double tolerance) {
-            this.tolerance = tolerance;
+    public static class Builder extends CoefficientBuilderBase<Builder> {
+        @Override
+        protected Builder self() {
             return this;
         }
 

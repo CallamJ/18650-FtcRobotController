@@ -1,10 +1,10 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import androidx.annotation.Nullable;
-import org.firstinspires.ftc.teamcode.components.DriveBase;
-import org.firstinspires.ftc.teamcode.components.Indexer;
-import org.firstinspires.ftc.teamcode.components.StorageController;
-import org.firstinspires.ftc.teamcode.components.Turret;
+import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
+import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.mechanisms.Turret;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 
 public final class MatchStateStore {
