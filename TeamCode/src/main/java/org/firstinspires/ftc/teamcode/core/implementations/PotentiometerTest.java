@@ -14,7 +14,7 @@ public class PotentiometerTest extends TeleOpCore {
 
 	@Override
 	protected void onInitialize(){
-		potentiometer = Hardware.getPotentiometer("tiltPotentiometer", 270, 3.33);
+		potentiometer = hardware.getPotentiometer("tiltPotentiometer", 270, 3.33);
 		prettyTelem.addData("Voltage", () -> potentiometer.getVoltage());
 		prettyTelem.addData("Angle", () -> potentiometer.getAngle());
 		prettyTelem.addData("Offset", () -> potentiometer.getOffset());

@@ -42,7 +42,7 @@ public class LimelightDiagnosticsTeleOp extends TeleOpCore {
     protected void onInitialize() {
 
         try {
-            limelight = Hardware.getLimelight(limelightName);
+            limelight = hardware.getLimelight(limelightName);
             limelight.setPipeline(pipeline);
             if (startOnInit) {
                 limelight.start();

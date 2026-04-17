@@ -7,43 +7,24 @@ import org.firstinspires.ftc.robotcore.external.hardware.camera.CameraName;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /** @noinspection MismatchedQueryAndUpdateOfCollection*/
 public class Hardware {
-    private static final List<SmartCamera> cameras = new ArrayList<>();
-    private static final List<SmartMotor> motors = new ArrayList<>();
-    private static final List<SmartColorSensor> colorSensors = new ArrayList<>();
-    private static final List<SmartTouchSensor> touchSensors = new ArrayList<>();
-    private static final List<SmartServo> servos = new ArrayList<>();
-    private static final List<SmartLEDIndicator> ledIndicators = new ArrayList<>();
-    private static final List<SmartPotentiometer> potentiometers = new ArrayList<>();
-    private static final List<SmartAnalogInput> analogInputs = new ArrayList<>();
-    private static final List<SmartLimelight3A> limelight3As = new ArrayList<>();
-    private static final List<Device> devices = new ArrayList<>();
-    private static final List<Caching> caches = new ArrayList<>();
-    private static HardwareMap hardwareMap;
-    private static List<LynxModule> hubs;
-    private static LynxModule controlHub;
-    private static LynxModule expansionHub;
+    private final Map<DeviceKey<?>, Device> devices = new HashMap<>();
+    private final List<Caching> caches = new ArrayList<>();
+    private final HardwareMap hardwareMap;
+    private final List<LynxModule> hubs;
+    private LynxModule controlHub;
+    private LynxModule expansionHub;
 
-    public static void init(HardwareMap hardwareMap) {
-        Hardware.hardwareMap = hardwareMap;
-        Hardware.hubs = hardwareMap.getAll(LynxModule.class);
-
-        devices.clear();
-        caches.clear();
-        servos.clear();
-        cameras.clear();
-        motors.clear();
-        colorSensors.clear();
-        touchSensors.clear();
-        potentiometers.clear();
-        analogInputs.clear();
-        ledIndicators.clear();
-        limelight3As.clear();
+    public Hardware(HardwareMap hardwareMap) {
+        this.hardwareMap = hardwareMap;
+        this.hubs = hardwareMap.getAll(LynxModule.class);
 
         hubs.forEach(hub ->
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL)
@@ -58,38 +39,28 @@ public class Hardware {
         });
     }
 
-    public static List<LynxModule> getHubs() {
-        assertInitialized();
+    public List<LynxModule> getHubs() {
         return hubs;
     }
 
-    public static SmartCamera getCamera(String name, Pose pose){
-        assertInitialized();
-
+    public SmartCamera getCamera(String name, Pose pose){
         Optional<SmartCamera> cameraOptional = getDevice(SmartCamera.class, name);
         if (cameraOptional.isPresent()){
             return cameraOptional.get();
         }
 
         SmartCamera camera = new SmartCamera(hardwareMap.get(CameraName.class, name), name, pose);
-        cameras.add(camera);
-        devices.add(camera);
-        return camera;
+        return registerDevice(SmartCamera.class, camera);
     }
 
-    public static SmartLimelight3A getLimelight(String name) {
-        assertInitialized();
-
+    public SmartLimelight3A getLimelight(String name) {
         Optional<SmartLimelight3A> limelightOptional = getDevice(SmartLimelight3A.class, name);
         if (limelightOptional.isPresent()){
             return limelightOptional.get();
         }
 
         SmartLimelight3A smartLimelight3A = new SmartLimelight3A(name, hardwareMap.get(Limelight3A.class, name));
-        limelight3As.add(smartLimelight3A);
-        devices.add(smartLimelight3A);
-        caches.add(smartLimelight3A);
-        return smartLimelight3A;
+        return registerCachedDevice(SmartLimelight3A.class, smartLimelight3A);
     }
 
     /**
@@ -98,7 +69,7 @@ public class Hardware {
      * @param name the name of the motor.
      * @return the motor object associated with the passed name.
      */
-    public static SmartMotor getMotor(String name) {
+    public SmartMotor getMotor(String name) {
         return getMotor(name, false);
     }
 
@@ -108,28 +79,21 @@ public class Hardware {
      * @param name the name of the motor.
      * @return the motor object associated with the passed name.
      */
-    public static SmartMotor getMotor(String name, boolean hasExternalEncoder) {
-        assertInitialized();
-
+    public SmartMotor getMotor(String name, boolean hasExternalEncoder) {
         Optional<SmartMotor> motorOptional = getDevice(SmartMotor.class, name);
         if (motorOptional.isPresent()){
             return motorOptional.get();
         }
 
         SmartMotor smartMotor = new SmartMotor(hardwareMap.get(DcMotorEx.class, name), name, hasExternalEncoder);
-        motors.add(smartMotor);
-        devices.add(smartMotor);
-        caches.add(smartMotor);
-        return smartMotor;
+        return registerCachedDevice(SmartMotor.class, smartMotor);
     }
 
-    public static SmartColorSensor getColorSensor(String name) {
+    public SmartColorSensor getColorSensor(String name) {
         return getColorSensor(name, ColorMatchConfig.frontProfile());
     }
 
-    public static SmartColorSensor getColorSensor(String name, ColorMatchConfig.ColorMatchProfile colorProfile) {
-        assertInitialized();
-
+    public SmartColorSensor getColorSensor(String name, ColorMatchConfig.ColorMatchProfile colorProfile) {
         Optional<SmartColorSensor> colorSensorOptional = getDevice(SmartColorSensor.class, name);
         if (colorSensorOptional.isPresent()){
             return colorSensorOptional.get();
@@ -140,72 +104,50 @@ public class Hardware {
                 name,
                 colorProfile
         );
-        colorSensors.add(smartColorSensor);
-        devices.add(smartColorSensor);
-        caches.add(smartColorSensor);
-        return smartColorSensor;
+        return registerCachedDevice(SmartColorSensor.class, smartColorSensor);
     }
     
-    public static SmartServo getServo(String name){
-        assertInitialized();
-
+    public SmartServo getServo(String name){
         Optional<SmartServo> servoOptional = getDevice(SmartServo.class, name);
         if (servoOptional.isPresent()){
             return servoOptional.get();
         }
 
         SmartServo servo = new SmartServo(hardwareMap.get(Servo.class, name), name);
-        servos.add(servo);
-        devices.add(servo);
-        caches.add(servo);
-        return servo;
+        return registerCachedDevice(SmartServo.class, servo);
     }
 
-    public static SmartLEDIndicator getLEDIndicator(String name) {
-        assertInitialized();
-
+    public SmartLEDIndicator getLEDIndicator(String name) {
         Optional<SmartLEDIndicator> indicatorOptional = getDevice(SmartLEDIndicator.class, name);
         if (indicatorOptional.isPresent()) {
             return indicatorOptional.get();
         }
 
         SmartLEDIndicator indicator = new SmartLEDIndicator(getServo(name));
-        ledIndicators.add(indicator);
-        devices.add(indicator);
-        return indicator;
+        return registerDevice(SmartLEDIndicator.class, indicator);
     }
 
-    public static SmartTouchSensor getTouchSensor(String name){
-        assertInitialized();
-
+    public SmartTouchSensor getTouchSensor(String name){
         Optional<SmartTouchSensor> touchSensorOptional = getDevice(SmartTouchSensor.class, name);
         if (touchSensorOptional.isPresent()){
             return touchSensorOptional.get();
         }
 
         SmartTouchSensor smartTouchSensor = new SmartTouchSensor(hardwareMap.get(TouchSensor.class, name), name);
-        touchSensors.add(smartTouchSensor);
-        devices.add(smartTouchSensor);
-        caches.add(smartTouchSensor);
-        return smartTouchSensor;
+        return registerCachedDevice(SmartTouchSensor.class, smartTouchSensor);
     }
 
-    public static SmartAnalogInput getAnalogInput(String name){
-        assertInitialized();
-
+    public SmartAnalogInput getAnalogInput(String name){
         Optional<SmartAnalogInput> inputOptional = getDevice(SmartAnalogInput.class, name);
         if (inputOptional.isPresent()){
 	        return inputOptional.get();
         }
 
         SmartAnalogInput input = new SmartAnalogInput(hardwareMap.get(AnalogInput.class, name), name);
-        analogInputs.add(input);
-        return input;
+        return registerDevice(SmartAnalogInput.class, input);
     }
 
-    public static SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage){
-        assertInitialized();
-
+    public SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage){
         Optional<SmartPotentiometer> potentiometerOptional = getDevice(SmartPotentiometer.class, name);
         if (potentiometerOptional.isPresent()){
             SmartPotentiometer potentiometer = potentiometerOptional.get();
@@ -215,16 +157,12 @@ public class Hardware {
 
         SmartAnalogInput input = getAnalogInput(name);
         SmartPotentiometer potentiometer = new SmartPotentiometer(input, name, maxAngle, maxVoltage);
-        potentiometers.add(potentiometer);
-        devices.add(potentiometer);
-        caches.add(potentiometer);
+        registerCachedDevice(SmartPotentiometer.class, potentiometer);
         potentiometer.updateCache();
         return potentiometer;
     }
 
-    public static SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage, double offset){
-        assertInitialized();
-
+    public SmartPotentiometer getPotentiometer(String name, double maxAngle, double maxVoltage, double offset){
         Optional<SmartPotentiometer> potentiometerOptional = getDevice(SmartPotentiometer.class, name);
         if (potentiometerOptional.isPresent()){
             SmartPotentiometer potentiometer = potentiometerOptional.get();
@@ -234,9 +172,7 @@ public class Hardware {
 
         SmartAnalogInput input = getAnalogInput(name);
         SmartPotentiometer potentiometer = new SmartPotentiometer(input, name, maxAngle, maxVoltage, offset);
-        potentiometers.add(potentiometer);
-        devices.add(potentiometer);
-        caches.add(potentiometer);
+        registerCachedDevice(SmartPotentiometer.class, potentiometer);
         potentiometer.updateCache();
         return potentiometer;
     }
@@ -246,48 +182,66 @@ public class Hardware {
      * @param name the name of the device to get.
      * @return the hardware object requested.
      */
-    public static <T> T getOther(Class<? extends T> type, String name) {
-        assertInitialized();
+    public <T> T getRaw(Class<? extends T> type, String name) {
         return hardwareMap.get(type, name);
     }
 
-    public static void invalidateCaches() {
-        assertInitialized();
+    public void invalidateCaches() {
         caches.forEach(Caching::invalidateCache);
         hubs.forEach(LynxModule::clearBulkCache);
     }
 
-    public static LynxModule getControlHub(){
+    public LynxModule getControlHub(){
         return controlHub;
     }
 
-    public static LynxModule getExpansionHub(){
+    public LynxModule getExpansionHub(){
         return expansionHub;
     }
 
-    public static void setCachingStrategy(Caching.Strategy strategy){
-        assertInitialized();
+    public void setCachingStrategy(Caching.Strategy strategy){
         caches.forEach(caching -> caching.setStrategy(strategy));
     }
 
-    private static void assertInitialized() {
-        if (hardwareMap == null)
-            throw new HardwareMapNotInitializedException();
+    private <T extends Device> Optional<T> getDevice(Class<? extends T> type, String configName){
+        return Optional.ofNullable(type.cast(devices.get(new DeviceKey<>(type, configName))));
     }
 
-    private static Optional<Device> getFirstDevice(String configName){
-        return devices.stream().filter(device -> device.configName.equals(configName)).findFirst();
+    private <T extends Device> T registerDevice(Class<T> type, T device) {
+        devices.put(new DeviceKey<>(type, device.getConfigName()), device);
+        return device;
     }
 
-    private static List<Device> getDevices(String configName){
-        return devices.stream().filter(device -> device.configName.equals(configName)).collect(Collectors.toList());
+    private <T extends Device & Caching> T registerCachedDevice(Class<T> type, T device) {
+        devices.put(new DeviceKey<>(type, device.getConfigName()), device);
+        caches.add(device);
+        return device;
     }
 
-    private static <T extends Device> Optional<T> getDevice(Class<? extends T> type, String configName){
-	    //noinspection unchecked
-	    return (Optional<T>) devices.stream()
-                .filter(device -> device.configName.equals(configName))
-                .filter(device -> device.getClass().equals(type))
-                .findFirst();
+    private static final class DeviceKey<T extends Device> {
+        private final Class<T> type;
+        private final String configName;
+
+        private DeviceKey(Class<T> type, String configName) {
+            this.type = type;
+            this.configName = configName;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof DeviceKey)) {
+                return false;
+            }
+            DeviceKey<?> other = (DeviceKey<?>) obj;
+            return Objects.equals(type, other.type) && Objects.equals(configName, other.configName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(type, configName);
+        }
     }
 }

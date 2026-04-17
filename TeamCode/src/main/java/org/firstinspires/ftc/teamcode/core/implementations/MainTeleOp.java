@@ -171,12 +171,12 @@ public class MainTeleOp extends TeleOpCore {
 
         try {
             feeder = new Feeder(
-                    hardwareMap.get(CRServo.class, "feederServo"),
-                    Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+                    hardware.getRaw(CRServo.class, "feederServo"),
+                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
-            collector = new Collector(Hardware.getMotor("collectorMotor"));
-            frontCameraSensor = Hardware
+            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
+            collector = new Collector(hardware.getMotor("collectorMotor"));
+            frontCameraSensor = hardware
                     .getCamera("colorCamera", new Pose(0, 0, 0))
                     .asColorSensor();
             storageController = new StorageController(
@@ -184,9 +184,9 @@ public class MainTeleOp extends TeleOpCore {
                     indexer,
                     collector,
                     frontCameraSensor,
-                    Hardware.getLEDIndicator("leftLED"),
-                    Hardware.getLEDIndicator("rightLED"),
-                    Hardware.getLEDIndicator("frontLED")
+                    hardware.getLEDIndicator("leftLED"),
+                    hardware.getLEDIndicator("rightLED"),
+                    hardware.getLEDIndicator("frontLED")
             );
             applyPersistedStorageStateIfAvailable();
         } catch (Exception e) {
@@ -194,10 +194,10 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         try {
-            launcher = new Launcher(Hardware.getMotor("launcherMotor"));
-            hood = new Hood(Hardware.getServo("hoodServo"));
-            turret = new Turret(Hardware.getMotor("turretMotor"), Hardware.getMotor("turretMotor").getEncoder());
-            limelight = Hardware.getLimelight("limelight");
+            launcher = new Launcher(hardware, hardware.getMotor("launcherMotor"));
+            hood = new Hood(hardware.getServo("hoodServo"));
+            turret = new Turret(hardware.getMotor("turretMotor"), hardware.getMotor("turretMotor").getEncoder());
+            limelight = hardware.getLimelight("limelight");
             limelight.setPipeline(0);
             limelight.start();
 
@@ -206,7 +206,7 @@ public class MainTeleOp extends TeleOpCore {
                     hood,
                     launcher,
                     limelight,
-                    Hardware.getLEDIndicator("launcherLED"),
+                    hardware.getLEDIndicator("launcherLED"),
                     driveBase,
                     null
             );

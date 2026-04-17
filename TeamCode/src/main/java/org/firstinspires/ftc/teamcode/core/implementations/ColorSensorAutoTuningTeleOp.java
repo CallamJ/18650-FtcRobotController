@@ -116,10 +116,10 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
     protected void onInitialize() {
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
-            frontSensor = Hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
-            leftSensor = Hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
-            rightSensor = Hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
+            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
+            frontSensor = hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
+            leftSensor = hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
+            rightSensor = hardware.getColorSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
             frontLED = tryGetLed("frontLED");
             leftLED = tryGetLed("leftLED");
             rightLED = tryGetLed("rightLED");
@@ -1043,7 +1043,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
 
     private SmartLEDIndicator tryGetLed(String name) {
         try {
-            return Hardware.getLEDIndicator(name);
+            return hardware.getLEDIndicator(name);
         } catch (Exception e) {
             prettyTelem.warning("LED '" + name + "' unavailable: " + e.getMessage());
             return null;
@@ -1052,7 +1052,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
 
     private Collector tryGetCollector(String motorName) {
         try {
-            return new Collector(Hardware.getMotor(motorName));
+            return new Collector(hardware.getMotor(motorName));
         } catch (Exception e) {
             prettyTelem.warning("Collector '" + motorName + "' unavailable: " + e.getMessage());
             return null;

@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.core;
 
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
 import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
@@ -12,6 +11,7 @@ import org.firstinspires.ftc.teamcode.utilities.PrettyTelemetry;
  */
 public abstract class OpModeCore extends LinearOpMode {
 	private static OpModeCore instance;
+	protected Hardware hardware;
 	protected PrettyTelemetry prettyTelem;
 
 	/**
@@ -50,7 +50,7 @@ public abstract class OpModeCore extends LinearOpMode {
 	 * Performs one-time framework initialization and then invokes {@link #onInitialize()} for subclass setup.
 	 */
 	protected final void initialize(){
-		Hardware.init(hardwareMap);
+		this.hardware = new Hardware(hardwareMap);
 		PersistentStorage.init(hardwareMap);
 		this.prettyTelem = new PrettyTelemetry(telemetry, PanelsTelemetry.INSTANCE.getFtcTelemetry());
 		onInitialize();
@@ -98,7 +98,7 @@ public abstract class OpModeCore extends LinearOpMode {
 	 * Do not override this method unless you know what you're doing.
 	 */
 	protected void frameworkTick(){
-		Hardware.invalidateCaches();
+		hardware.invalidateCaches();
 		this.prettyTelem.update();
 	}
 

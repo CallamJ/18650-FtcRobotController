@@ -12,6 +12,7 @@ import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 
 @Configurable
 public class Launcher extends MotorVelocityAxisComponent {
+    private final Hardware hardware;
 
     public static double kP = 0.001, kI = 0, kD = 0, kF = 0.00035, kV = 0.03, tolerance = 30;
     public static double maxVoltage = 14;
@@ -19,7 +20,7 @@ public class Launcher extends MotorVelocityAxisComponent {
 
     public static float ticksPerDegree = (288f/360f);
 
-    public Launcher(SmartMotor motor) {
+    public Launcher(Hardware hardware, SmartMotor motor) {
         super(
                 motor,
                 VelocityPID.builder()
@@ -30,13 +31,14 @@ public class Launcher extends MotorVelocityAxisComponent {
                         .setTolerance(tolerance)
                         .build()
         );
+        this.hardware = hardware;
         this.motor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
     }
 
     @Override
     protected double shapeMotorPower(double output, double target, double current) {
         double voltageCompensation = target != 0
-                ? (maxVoltage - voltageFilter.compute(Hardware.getControlHub().getInputVoltage(VoltageUnit.VOLTS))) * kV
+                ? (maxVoltage - voltageFilter.compute(hardware.getControlHub().getInputVoltage(VoltageUnit.VOLTS))) * kV
                 : 0;
         return output + voltageCompensation;
     }

@@ -39,32 +39,32 @@ public class SimpleTeleOp extends TeleOpCore {
         try {
             feeder = new Feeder(
                     hardwareMap.get(CRServo.class, "feederServo"),
-                    Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
+            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
         } catch (Exception e) {
             prettyTelem.error("Indexer failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            launcher = new Launcher(Hardware.getMotor("launcherMotor"));
+            launcher = new Launcher(hardware, hardware.getMotor("launcherMotor"));
         } catch (Exception e) {
             prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            collector = new Collector(Hardware.getMotor("collectorMotor"));
+            collector = new Collector(hardware.getMotor("collectorMotor"));
         } catch (Exception e) {
             prettyTelem.error("Collector failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            turret = new Turret(Hardware.getMotor("turretMotor"), Hardware.getMotor("turretMotor").getEncoder());
+            turret = new Turret(hardware.getMotor("turretMotor"), hardware.getMotor("turretMotor").getEncoder());
         } catch (Exception e) {
             prettyTelem.error("Turret failed to initialize, skipping: " + e.getMessage());
         }

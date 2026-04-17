@@ -20,7 +20,7 @@ public class ServoTester extends TeleOpCore {
     protected void onInitialize(){
         //noinspection DuplicatedCode
 
-        servo = Hardware.getServo("hoodServo");
+        servo = hardware.getServo("hoodServo");
         telemetry.addData("Target", servo::getPosition);
     }
 

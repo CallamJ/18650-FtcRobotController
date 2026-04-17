@@ -216,7 +216,7 @@ public abstract class AutoOpBase extends OpModeCore {
         Constants.setMecanumMaxPower(autoFollowerMaxPower);
 
         try {
-            limelight = Hardware.getLimelight("limelight");
+            limelight = hardware.getLimelight("limelight");
             limelight.setPipeline(0);
             limelight.start();
 
@@ -240,11 +240,11 @@ public abstract class AutoOpBase extends OpModeCore {
         try {
             feeder = new Feeder(
                     hardwareMap.get(CRServo.class, "feederServo"),
-                    Hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
             );
-            indexer = new Indexer(Hardware.getMotor("indexerMotor", true));
-            collector = new Collector(Hardware.getMotor("collectorMotor"));
-            frontCameraSensor = Hardware
+            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
+            collector = new Collector(hardware.getMotor("collectorMotor"));
+            frontCameraSensor = hardware
                     .getCamera("colorCamera", new Pose(0, 0, 0))
                     .asColorSensor();
             storageController = new StorageController(
@@ -252,35 +252,35 @@ public abstract class AutoOpBase extends OpModeCore {
                     indexer,
                     collector,
                     frontCameraSensor,
-                    Hardware.getLEDIndicator("leftLED"),
-                    Hardware.getLEDIndicator("rightLED"),
-                    Hardware.getLEDIndicator("frontLED")
+                    hardware.getLEDIndicator("leftLED"),
+                    hardware.getLEDIndicator("rightLED"),
+                    hardware.getLEDIndicator("frontLED")
             );
         } catch (Exception e) {
             prettyTelem.error("Storage system failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            launcher = new Launcher(Hardware.getMotor("launcherMotor"));
+            launcher = new Launcher(hardware, hardware.getMotor("launcherMotor"));
         } catch (Exception e) {
             prettyTelem.error("Launcher failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            hood = new Hood(Hardware.getServo("hoodServo"));
+            hood = new Hood(hardware.getServo("hoodServo"));
         } catch (Exception e) {
             prettyTelem.error("Hood failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
-            turret = new Turret(Hardware.getMotor("turretMotor"), Hardware.getMotor("turretMotor").getEncoder());
+            turret = new Turret(hardware.getMotor("turretMotor"), hardware.getMotor("turretMotor").getEncoder());
         } catch (Exception e) {
             prettyTelem.error("Turret failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
             if (turret != null && hood != null && launcher != null && limelight != null) {
-                SmartLEDIndicator launcherLED = Hardware.getLEDIndicator("launcherLED");
+                SmartLEDIndicator launcherLED = hardware.getLEDIndicator("launcherLED");
                 fcs = new FireControlSystem(
                         turret,
                         hood,

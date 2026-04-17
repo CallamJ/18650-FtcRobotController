@@ -159,7 +159,7 @@ public class ColorSensorTuningTeleOp extends TeleOpCore {
 
     private SmartColorSensor tryGetSensor(String name) {
         try {
-            return Hardware.getColorSensor(name);
+            return hardware.getColorSensor(name);
         } catch (Exception e) {
             prettyTelem.warning("Color sensor '" + name + "' unavailable: " + e.getMessage());
             return null;
