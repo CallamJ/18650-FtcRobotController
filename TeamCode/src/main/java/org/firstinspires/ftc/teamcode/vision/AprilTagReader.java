@@ -16,7 +16,6 @@ public class AprilTagReader {
 
 
     private static final boolean USE_WEBCAM = true;  // true for webcam, false for phone camera
-    //todo test different values of decimation also test different PoseSolvers
 
     private boolean isInitialized = false;
 
@@ -44,7 +43,7 @@ public class AprilTagReader {
             VisionPortal.Builder builder = new VisionPortal.Builder();
 
             if (USE_WEBCAM) {
-                builder.setCamera(camera.passable());
+                builder.setCamera(camera.getRaw());
             } else {
                 builder.setCamera(BuiltinCameraDirection.BACK);
             }

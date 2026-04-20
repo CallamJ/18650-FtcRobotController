@@ -7,7 +7,7 @@ import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
  * This class is a wrapper for AnalogInputs that allows you to optionally filter the direct voltage output for better consistency.
  * Please note this class does NOT cache values.
  */
-public class SmartAnalogInput extends Device {
+public class SmartAnalogInput extends Device implements WrappedDevice<AnalogInput> {
 
 	private final AnalogInput base;
 	private final DataFilter dataFilter;
@@ -18,7 +18,7 @@ public class SmartAnalogInput extends Device {
 	 * @param base the FTC SDK AnalogInput which will supply the raw voltage reading.
 	 * @param configName the name of the input in the hardware map.
 	 */
-	protected SmartAnalogInput(AnalogInput base, String configName){
+	SmartAnalogInput(AnalogInput base, String configName){
 		super(configName);
 		this.base = base;
 		this.dataFilter = DataFilter.NONE;
@@ -31,10 +31,15 @@ public class SmartAnalogInput extends Device {
 	 * @param configName the name of the input in the hardware map.
 	 * @param dataFilter the filter which will be applied to the voltage, used when accessing the voltage via getVoltage().
 	 */
-	protected SmartAnalogInput(AnalogInput base, String configName, DataFilter dataFilter){
+	SmartAnalogInput(AnalogInput base, String configName, DataFilter dataFilter){
 		super(configName);
 		this.base = base;
-		this.dataFilter = dataFilter;
+		this.dataFilter = dataFilter == null ? DataFilter.NONE : dataFilter;
+	}
+
+	@Override
+	public AnalogInput getRaw() {
+		return base;
 	}
 
 	public double getVoltage(){

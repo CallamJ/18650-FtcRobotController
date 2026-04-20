@@ -26,7 +26,7 @@ public class MultiAprilTagReader {
         for (int i = 0; i < cameras.size(); i++) {
             SmartCamera camera = cameras.get(i);
             Pose cameraPose = camera.getPose();
-            CameraName camName = camera.passable();
+            CameraName camName = camera.getRaw();
 
             processors.add(new AprilTagProcessor.Builder()
                     .setCameraPose(cameraPose.getPosition(), cameraPose.getAngles())

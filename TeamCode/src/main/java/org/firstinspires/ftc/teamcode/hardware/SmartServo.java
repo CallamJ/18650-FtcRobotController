@@ -3,15 +3,20 @@ package org.firstinspires.ftc.teamcode.hardware;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoController;
 
-public class SmartServo extends Device implements Servo, Caching {
+public class SmartServo extends Device implements Servo, Caching, WrappedDevice<Servo> {
     private final Servo baseServo;
 
-    HardwareCache<Double> positionCache;
+    private final HardwareCache<Double> positionCache;
 
     SmartServo(Servo baseServo, String configName){
         super(configName);
         this.baseServo = baseServo;
-        positionCache = new HardwareCache<>(baseServo::getPosition);
+        this.positionCache = new HardwareCache<>(baseServo::getPosition);
+    }
+
+    @Override
+    public Servo getRaw() {
+        return baseServo;
     }
 
     /**
@@ -71,6 +76,7 @@ public class SmartServo extends Device implements Servo, Caching {
     @Override
     public void setPosition(double position) {
         baseServo.setPosition(position);
+        positionCache.invalidateCache();
     }
 
     /**
@@ -177,33 +183,21 @@ public class SmartServo extends Device implements Servo, Caching {
         baseServo.close();
     }
 
-    /**
-     *
-     */
     @Override
     public void invalidateCache() {
         positionCache.invalidateCache();
     }
 
-    /**
-     *
-     */
     @Override
     public void updateCache() {
         positionCache.updateCache();
     }
 
-    /**
-     * @param strategy
-     */
     @Override
     public void setStrategy(Strategy strategy) {
         positionCache.setStrategy(strategy);
     }
 
-    /**
-     * @return
-     */
     @Override
     public Strategy getStrategy() {
         return positionCache.getStrategy();

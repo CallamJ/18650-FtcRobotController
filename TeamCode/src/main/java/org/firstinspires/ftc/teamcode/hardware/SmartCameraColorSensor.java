@@ -75,7 +75,7 @@ public class SmartCameraColorSensor extends Device implements AutoCloseable, Sco
         this.visionPortal = new VisionPortal.Builder()
                 .addProcessor(processor)
                 .setCameraResolution(resolution)
-                .setCamera(camera.passable())
+                .setCamera(camera.getRaw())
                 .build();
     }
 

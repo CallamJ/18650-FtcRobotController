@@ -20,13 +20,7 @@ public class SmartPotentiometer extends Device implements Caching {
 	 * @param maxVoltage The maximum voltage output of the potentiometer at its highest position.
 	 */
 	SmartPotentiometer(SmartAnalogInput input, String name, double maxAngle, double maxVoltage) {
-		super(name);
-		this.input = input;
-		this.maxAngle = maxAngle;
-		this.maxVoltage = maxVoltage;
-		this.offsetToZero = 0;
-		this.rawAngleCache = new HardwareCache<>(() -> voltageToAngle(input.getVoltage()));
-		this.normalize = false;
+		this(input, name, maxAngle, maxVoltage, 0);
 	}
 
 	/**
@@ -83,7 +77,7 @@ public class SmartPotentiometer extends Device implements Caching {
 
 	/**
 	 * Resets the potentiometer's zero position to the current raw angle.
-	 * This effectively sets the current position as the new zero and saves the offset persistently.
+	 * This effectively sets the current position as the new zero and saves the offset.
 	 */
 	public void reset() {
 		offsetToZero = -getRawAngle();

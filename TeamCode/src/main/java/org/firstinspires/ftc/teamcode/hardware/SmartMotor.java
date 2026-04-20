@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.configuration.typecontainers.MotorConfigu
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
-public class SmartMotor extends Device implements DcMotorEx, Caching {
+public class SmartMotor extends Device implements DcMotorEx, Caching, WrappedDevice<DcMotorEx> {
 
     private final DcMotorEx motor;
 
@@ -23,16 +23,21 @@ public class SmartMotor extends Device implements DcMotorEx, Caching {
         this.encoder = new SmartEncoder(motor, name, hasExternalEncoder);
     }
 
-    public DcMotor getMotor(){
+    @Override
+    public DcMotorEx getRaw() {
         return motor;
+    }
+
+    public DcMotor getMotor(){
+        return getRaw();
     }
 
     public DcMotorEx getMotorEx(){
-        return motor;
+        return getRaw();
     }
 
     public DcMotorSimple getMotorSimple(){
-        return motor;
+        return getRaw();
     }
 
     public SmartEncoder getEncoder(){

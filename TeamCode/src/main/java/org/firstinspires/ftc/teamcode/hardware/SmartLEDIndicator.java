@@ -2,17 +2,27 @@ package org.firstinspires.ftc.teamcode.hardware;
 
 public class SmartLEDIndicator extends Device {
     public enum IndicatorColor {
-        OFF,
-        RED,
-        ORANGE,
-        YELLOW,
-        SAGE,
-        GREEN,
-        AZURE,
-        BLUE,
-        INDIGO,
-        VIOLET,
-        WHITE
+        OFF(OFF_POSITION),
+        RED(RED_POSITION),
+        ORANGE(ORANGE_POSITION),
+        YELLOW(YELLOW_POSITION),
+        SAGE(SAGE_POSITION),
+        GREEN(GREEN_POSITION),
+        AZURE(AZURE_POSITION),
+        BLUE(BLUE_POSITION),
+        INDIGO(INDIGO_POSITION),
+        VIOLET(VIOLET_POSITION),
+        WHITE(WHITE_POSITION);
+
+        private final double position;
+
+        IndicatorColor(double position) {
+            this.position = position;
+        }
+
+        public double getPosition() {
+            return position;
+        }
     }
 
     private static final double OFF_POSITION = 0.0;
@@ -45,44 +55,7 @@ public class SmartLEDIndicator extends Device {
         if (color == null) {
             throw new IllegalArgumentException("color cannot be null");
         }
-
-        switch (color) {
-            case OFF:
-                setPosition(OFF_POSITION);
-                return;
-            case RED:
-                setPosition(RED_POSITION);
-                return;
-            case ORANGE:
-                setPosition(ORANGE_POSITION);
-                return;
-            case YELLOW:
-                setPosition(YELLOW_POSITION);
-                return;
-            case SAGE:
-                setPosition(SAGE_POSITION);
-                return;
-            case GREEN:
-                setPosition(GREEN_POSITION);
-                return;
-            case AZURE:
-                setPosition(AZURE_POSITION);
-                return;
-            case BLUE:
-                setPosition(BLUE_POSITION);
-                return;
-            case INDIGO:
-                setPosition(INDIGO_POSITION);
-                return;
-            case VIOLET:
-                setPosition(VIOLET_POSITION);
-                return;
-            case WHITE:
-                setPosition(WHITE_POSITION);
-                return;
-            default:
-                throw new IllegalArgumentException("Unsupported color: " + color);
-        }
+        setPosition(color.getPosition());
     }
 
     public void off() {
@@ -150,7 +123,6 @@ public class SmartLEDIndicator extends Device {
      * FTC SDK servo position is command-state, not physical angle feedback.
      */
     public double getPosition() {
-        servo.updateCache();
         return servo.getPosition();
     }
 
@@ -195,7 +167,7 @@ public class SmartLEDIndicator extends Device {
     }
 
     /**
-     * Returns the equivalent supported hue (0..270) based on current commanded position.
+     * Returns the equivalent supported hue (0..270) based on the current commanded position.
      */
     public double getHue() {
         return getSpectrum() * SUPPORTED_HUE_MAX;
@@ -239,7 +211,6 @@ public class SmartLEDIndicator extends Device {
 
     private void setPosition(double position) {
         servo.setPosition(clamp(position, 0.0, 1.0));
-        servo.invalidateCache();
     }
 
     private static void validateFinite(double value, String argumentName) {
@@ -265,31 +236,9 @@ public class SmartLEDIndicator extends Device {
     }
 
     private static double getPositionForColor(IndicatorColor color) {
-        switch (color) {
-            case OFF:
-                return OFF_POSITION;
-            case RED:
-                return RED_POSITION;
-            case ORANGE:
-                return ORANGE_POSITION;
-            case YELLOW:
-                return YELLOW_POSITION;
-            case SAGE:
-                return SAGE_POSITION;
-            case GREEN:
-                return GREEN_POSITION;
-            case AZURE:
-                return AZURE_POSITION;
-            case BLUE:
-                return BLUE_POSITION;
-            case INDIGO:
-                return INDIGO_POSITION;
-            case VIOLET:
-                return VIOLET_POSITION;
-            case WHITE:
-                return WHITE_POSITION;
-            default:
-                throw new IllegalArgumentException("Unsupported color: " + color);
+        if (color == null) {
+            throw new IllegalArgumentException("color cannot be null");
         }
+        return color.getPosition();
     }
 }

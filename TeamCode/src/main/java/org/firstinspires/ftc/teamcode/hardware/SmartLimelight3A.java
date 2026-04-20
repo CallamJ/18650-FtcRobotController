@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @Configurable
 
-public class SmartLimelight3A extends Device implements Caching {
+public class SmartLimelight3A extends Device implements Caching, WrappedDevice<Limelight3A> {
     private static final Logger log = LoggerFactory.getLogger(SmartLimelight3A.class);
     private static final long WARN_THROTTLE_MS = 1000;
     private final Limelight3A limelight;
@@ -37,6 +37,11 @@ public class SmartLimelight3A extends Device implements Caching {
         this.limelight = limelight;
         this.resultCache = new HardwareCache<>(this::safeGetLatestResult);
         this.statusCache = new HardwareCache<>(this::safeGetStatus);
+    }
+
+    @Override
+    public Limelight3A getRaw() {
+        return limelight;
     }
 
     public void start(){

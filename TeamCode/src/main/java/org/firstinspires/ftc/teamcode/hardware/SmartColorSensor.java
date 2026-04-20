@@ -12,13 +12,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.jetbrains.annotations.NotNull;
 
 @Configurable
-public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching, ScoringColorSensor {
+public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching, ScoringColorSensor, WrappedDevice<NormalizedColorSensor> {
     public static int HSV_HUE_FILTER_WINDOW = 0;
     public static int HSV_SATURATION_FILTER_WINDOW = 0;
     public static int HSV_VALUE_FILTER_WINDOW = 0;
 
-    NormalizedColorSensor colorSensor;
-    HardwareCache<NormalizedRGBA> colorCache;
+    private final NormalizedColorSensor colorSensor;
+    private final HardwareCache<NormalizedRGBA> colorCache;
     private final ColorMatchConfig.ColorMatchProfile colorProfile;
     private DataFilter hueFilter = DataFilter.NONE;
     private DataFilter saturationFilter = DataFilter.NONE;
@@ -40,8 +40,13 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         super(configName);
         this.colorSensor = colorSensor;
         this.colorProfile = colorProfile == null ? ColorMatchConfig.frontProfile() : colorProfile;
-        colorCache = new HardwareCache<>(colorSensor::getNormalizedColors);
+        this.colorCache = new HardwareCache<>(colorSensor::getNormalizedColors);
         syncConfiguredGain();
+    }
+
+    @Override
+    public NormalizedColorSensor getRaw() {
+        return colorSensor;
     }
 
     /**

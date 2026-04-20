@@ -56,7 +56,7 @@ public class SmartEncoder extends Device implements Caching {
         if (usesBase) {
             return positionCache.read() - tickOffsetToZero;
         } else {
-            return (positionCache.read() - tickOffsetToZero) * (direction == Direction.FORWARD ? 1 : -1);
+            return (positionCache.read() - tickOffsetToZero) * getDirectionSignum();
         }
     }
 
@@ -66,7 +66,7 @@ public class SmartEncoder extends Device implements Caching {
      * @return The velocity in ticks per second.
      */
     public double getVelocity() {
-        return velocityCache.read();
+        return velocityCache.read() * getDirectionSignum();
     }
 
     /**
@@ -116,7 +116,7 @@ public class SmartEncoder extends Device implements Caching {
     }
 
     public void resetAs(int position) {
-        tickOffsetToZero = positionCache.updateAndGet() - position;
+        tickOffsetToZero = positionCache.updateAndGet() - (position * getDirectionSignum());
     }
 
     public void addOffset(int offset) {
@@ -129,6 +129,9 @@ public class SmartEncoder extends Device implements Caching {
      * @param direction The new direction (FORWARD or REVERSE).
      */
     public void setDirection(Direction direction) {
+        if (direction == null) {
+            throw new IllegalArgumentException("direction cannot be null");
+        }
         if(this.encoder != null){
             if(direction == Direction.FORWARD){
                 encoder.setDirection(BaseEncoder.Direction.FORWARD);
@@ -149,6 +152,10 @@ public class SmartEncoder extends Device implements Caching {
      */
     public Direction getDirection() {
         return direction;
+    }
+
+    private int getDirectionSignum() {
+        return usesBase ? 1 : (direction == Direction.FORWARD ? 1 : -1);
     }
 
     /**
@@ -173,7 +180,7 @@ public class SmartEncoder extends Device implements Caching {
             FORWARD(1),
             REVERSE(-1);
 
-            private int multiplier;
+            private final int multiplier;
 
             Direction(int multiplier) {
                 this.multiplier = multiplier;
@@ -184,14 +191,14 @@ public class SmartEncoder extends Device implements Caching {
             }
         }
 
-        private DcMotorEx motor;
-        private long startTimeNanos;
+        private final DcMotorEx motor;
+        private final long startTimeNanos;
 
         private Direction direction;
 
         private int lastPosition;
         private int velocityEstimateIdx;
-        private double[] velocityEstimates;
+        private final double[] velocityEstimates;
         private double lastUpdateTime;
 
         public BaseEncoder(DcMotorEx motor) {
