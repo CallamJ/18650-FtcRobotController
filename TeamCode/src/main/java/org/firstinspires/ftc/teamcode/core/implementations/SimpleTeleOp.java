@@ -4,24 +4,26 @@ import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
+import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
 @Configurable
 @TeleOp(name = "2 - Simple TeleOp")
 public class SimpleTeleOp extends TeleOpCore {
     protected static DriveBase driveBase;
-    protected static Feeder feeder;
+    protected static FeedWheels feedWheels;
+    protected static FeedRamp feedRamp;
+    protected static FeedSystem feeder;
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
     protected static Turret turret;
 
     @Override
-    protected void onInitialize(){
+    protected void onInitialize() {
         //noinspection DuplicatedCode
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
@@ -37,10 +39,17 @@ public class SimpleTeleOp extends TeleOpCore {
         }
 
         try {
-            feeder = new Feeder(
-                    hardwareMap.get(CRServo.class, "feederServo"),
-                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+            feedWheels = new FeedWheels(
+                    hardwareMap.get(CRServo.class, "leftFeedServo"),
+                    hardwareMap.get(CRServo.class, "rightFeedServo")
             );
+            feedRamp = new FeedRamp(
+                    hardware.getServo("leftFeedRampServo"),
+                    hardware.getServo("rightFeedRampServo")
+            );
+
+            feeder = new FeedSystem(feedWheels, feedRamp);
+            feeder.stopFeeding();
         } catch (Exception e) {
             prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
         }
@@ -70,33 +79,35 @@ public class SimpleTeleOp extends TeleOpCore {
         }
     }
 
+    boolean runFeeders = false;
+
     @Override
     protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
         //noinspection DuplicatedCode
 
-        if(driveBase != null){
+        if (driveBase != null) {
             driveBase.moveUsingPower(gamepad1.leftStickX, gamepad1.leftStickY, gamepad1.rightStickX);
         }
 
-        if(feeder != null){
-            if(gamepad1.yPressed()){
-                feeder.trigger();
+        if (feeder != null) {
+            if (gamepad1.yPressed()) {
+                feeder.toggleFeeding();
             }
         }
 
-        if(indexer != null){
-            if(gamepad1.leftBumperPressed()){
+        if (indexer != null) {
+            if (gamepad1.leftBumperPressed()) {
                 indexer.advanceIndexCounterclockwise();
             }
-            if(gamepad1.rightBumperPressed()){
+            if (gamepad1.rightBumperPressed()) {
                 indexer.advanceIndexClockwise();
             }
         }
 
-        if(launcher != null){
-            if(gamepad1.xPressed()){
+        if (launcher != null) {
+            if (gamepad1.xPressed()) {
                 double launcherVelocity = 15000;
-                if(launcher.getTargetVelocity() == launcherVelocity){
+                if (launcher.getTargetVelocity() == launcherVelocity) {
                     launcher.stop();
                 } else {
                     launcher.setTargetVelocity(launcherVelocity);
@@ -104,19 +115,19 @@ public class SimpleTeleOp extends TeleOpCore {
             }
         }
 
-        if(collector != null){
-            if(gamepad1.aPressed()){
+        if (collector != null) {
+            if (gamepad1.aPressed()) {
                 double forwardPower = 1;
-                if(collector.getPower() == forwardPower){
+                if (collector.getPower() == forwardPower) {
                     collector.stop();
                 } else {
                     collector.setPower(forwardPower);
                 }
             }
 
-            if(gamepad1.bPressed()){
+            if (gamepad1.bPressed()) {
                 double reversePower = -0.5;
-                if(collector.getPower() == reversePower){
+                if (collector.getPower() == reversePower) {
                     collector.stop();
                 } else {
                     collector.setPower(reversePower);
@@ -124,20 +135,17 @@ public class SimpleTeleOp extends TeleOpCore {
             }
         }
 
-        if(turret != null){
-            turret.setTargetPosition(turret.getCurrentPosition() + gamepad1.rightTrigger - gamepad1.leftTrigger);
+        if (turret != null) {
+            turret.setTargetPosition(turret.getCurrentPosition() + (gamepad1.rightTrigger - gamepad1.leftTrigger) * 5);
         }
     }
 
     @Override
-    protected void onTick(){
-        if(feeder != null){
-            feeder.tick();
-        }
-        if(indexer != null){
+    protected void onTick() {
+        if (indexer != null) {
             indexer.tick();
         }
-        if(launcher != null){
+        if (launcher != null) {
             launcher.tick();
         }
     }

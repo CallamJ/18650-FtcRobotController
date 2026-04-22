@@ -7,13 +7,13 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
@@ -34,7 +34,9 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static final SmartLimelight3A.AprilTag.Type DEFAULT_TAG_PATTERN = SmartLimelight3A.AprilTag.Type.OBELISK_GPP;
 
     protected static DriveBase driveBase;
-    protected static Feeder feeder;
+    protected static FeedWheels feedWheels;
+    protected static FeedRamp feedRamp;
+    protected static FeedSystem feeder;
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
@@ -178,7 +180,7 @@ public abstract class AutoOpBase extends OpModeCore {
         }
 
         driveBase = null;
-        feeder = null;
+        feedWheels = null;
         collector = null;
         indexer = null;
         launcher = null;
@@ -238,10 +240,21 @@ public abstract class AutoOpBase extends OpModeCore {
         }
 
         try {
-            feeder = new Feeder(
-                    hardwareMap.get(CRServo.class, "feederServo"),
-                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
+            feedWheels = new FeedWheels(
+                    hardwareMap.get(CRServo.class, "leftFeedServo"),
+                    hardwareMap.get(CRServo.class, "rightFeedServo")
             );
+            feedRamp = new FeedRamp(
+                    hardware.getServo("leftFeedRampServo"),
+                    hardware.getServo("rightFeedRampServo")
+            );
+
+            feeder = new FeedSystem(feedWheels, feedRamp);
+        } catch (Exception e) {
+            prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
             indexer = new Indexer(hardware.getMotor("indexerMotor", true));
             collector = new Collector(hardware.getMotor("collectorMotor"));
             frontCameraSensor = hardware

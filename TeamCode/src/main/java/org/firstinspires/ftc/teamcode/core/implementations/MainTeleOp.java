@@ -5,6 +5,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
@@ -16,7 +17,6 @@ import org.firstinspires.ftc.teamcode.core.teleoptasks.TeleOpTaskManager;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.tasks.FarFiringTask;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
@@ -43,7 +43,9 @@ public class MainTeleOp extends TeleOpCore {
 
     private static final Logger log = LoggerFactory.getLogger(MainTeleOp.class);
     protected static DriveBase driveBase;
-    protected static Feeder feeder;
+    protected static FeedWheels feedWheels;
+    protected static FeedRamp feedRamp;
+    protected static FeedSystem feeder;
     protected static Turret turret;
     protected static Collector collector;
     protected static Indexer indexer;
@@ -75,11 +77,6 @@ public class MainTeleOp extends TeleOpCore {
     public static double taskInterruptDeadband = 0.08;
     public static double obeliskFieldXIn = 73.0;
     public static double obeliskFieldYIn = 0.0;
-//    public static double turretAxisOffsetRobotXIn = -3.0;
-//    public static double turretAxisOffsetRobotYIn = -2.0;
-//    public static double cameraOffsetTurretXIn = 0.0;
-//    public static double cameraOffsetTurretYIn = 6.5;
-//    public static double cameraYawOffsetDeg = 0.0;
     public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
     public static double turretZeroBumpTicksPerTriggerUnit = -75.0;
     public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
@@ -98,11 +95,11 @@ public class MainTeleOp extends TeleOpCore {
     private TelemetryMode telemetryMode = TelemetryMode.DEBUG;
     private ObeliskRelocalizeState obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
     private String obeliskRelocalizeStatus = "IDLE";
-    private double lastSolvedObeliskPoseXIn = 0;
-    private double lastSolvedObeliskPoseYIn = 0;
-    private double lastSeenObeliskCamXIn = 0;
-    private double lastSeenObeliskCamZIn = 0;
-    private boolean clearLeftSlotWhenFeederReturns = false;
+    public static double lastSolvedObeliskPoseXIn = 0;
+    public static double lastSolvedObeliskPoseYIn = 0;
+    public static double lastSeenObeliskCamXIn = 0;
+    public static double lastSeenObeliskCamZIn = 0;
+    public static boolean clearLeftSlotWhenFeederReturns = false;
 
     private static void resetSubsystemReferences() {
         if (limelight != null) {
@@ -114,7 +111,7 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         driveBase = null;
-        feeder = null;
+        feedWheels = null;
         turret = null;
         collector = null;
         indexer = null;
@@ -159,6 +156,22 @@ public class MainTeleOp extends TeleOpCore {
         Constants.setMecanumMaxPower(teleOpFollowerMaxPower);
 
         try {
+            feedWheels = new FeedWheels(
+                    hardwareMap.get(CRServo.class, "leftFeedServo"),
+                    hardwareMap.get(CRServo.class, "rightFeedServo")
+            );
+            feedRamp = new FeedRamp(
+                    hardware.getServo("leftFeedRampServo"),
+                    hardware.getServo("rightFeedRampServo")
+            );
+
+            feeder = new FeedSystem(feedWheels, feedRamp);
+            feeder.stopFeeding();
+        } catch (Exception e) {
+            prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
             driveBase = new DriveBase(hardwareMap, configBuilder.build(), true);
             applyPersistedPoseIfAvailable();
             if (driveBase.getFollower() != null) {
@@ -170,10 +183,6 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         try {
-            feeder = new Feeder(
-                    hardware.getRaw(CRServo.class, "feederServo"),
-                    hardware.getPotentiometer("feederPotentiometer", 270, 3.3)
-            );
             indexer = new Indexer(hardware.getMotor("indexerMotor", true));
             collector = new Collector(hardware.getMotor("collectorMotor"));
             frontCameraSensor = hardware
@@ -190,7 +199,7 @@ public class MainTeleOp extends TeleOpCore {
             );
             applyPersistedStorageStateIfAvailable();
         } catch (Exception e) {
-            prettyTelem.error("Feeder failed to initialize, skipping: " + e.getMessage());
+            prettyTelem.error("Storage failed to initialize, skipping: " + e.getMessage());
         }
 
         try {
@@ -229,6 +238,7 @@ public class MainTeleOp extends TeleOpCore {
         rebuildTelemetryLayout();
     }
 
+    boolean runFeeders = false;
     @Override
     protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
         double driveX = -gamepad1.leftStickX;
@@ -294,19 +304,18 @@ public class MainTeleOp extends TeleOpCore {
             driveBase.moveUsingPower(driveX, driveY, driveTurn);
         }
 
-        if(feeder != null){
-            if(gamepad1.yPressed()){
-                feeder.trigger();
-                clearLeftSlotWhenFeederReturns = true;
+        if (feeder != null) {
+            if (gamepad1.yPressed()) {
+                feeder.toggleFeeding();
             }
         }
 
         if(storageController != null){
-            if(gamepad1.leftBumperPressed() && feeder.getState() == Feeder.State.RESTING){
+            if(gamepad1.leftBumperPressed()){
                 indexer.advanceIndexCounterclockwise();
                 storageController.dropFreshFlag();
             }
-            if(gamepad1.rightBumperPressed() && feeder.getState() == Feeder.State.RESTING){
+            if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
                 storageController.dropFreshFlag();
             }
@@ -378,14 +387,6 @@ public class MainTeleOp extends TeleOpCore {
 
     @Override
     protected void onTick(){
-        if (clearLeftSlotWhenFeederReturns && feeder != null && feeder.getState() == Feeder.State.RESTING) {
-            Double lastTriggerDurationMs = feeder.getLastTriggerDurationMs();
-            if(lastTriggerDurationMs != null && lastTriggerDurationMs < 2000 && storageController != null){
-                storageController.setLeftContent(StorageController.SlotContent.OPEN);
-            }
-            clearLeftSlotWhenFeederReturns = false;
-        }
-
         if(storageController != null){
             storageController.tick();
         }
@@ -529,10 +530,6 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("X", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().x())
                 .addData("Y", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().y())
                 .addData("Heading", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().heading());
-
-        prettyTelem.addLine("Feeder")
-                .addData("Current Angle", () -> feeder == null ? "n/a" : feeder.getCurrentPosition())
-                .addData("Target Angle", () -> feeder == null ? "n/a" : feeder.getTargetPosition());
         prettyTelem.addLine("Hood")
                 .addData("Target Pos", () -> hood == null ? "n/a" : hood.getTargetPosition());
         prettyTelem.addLine("Indexer")

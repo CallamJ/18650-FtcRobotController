@@ -29,7 +29,7 @@ public class SmartLimelight3A extends Device implements Caching, WrappedDevice<L
     private final HardwareCache<LLStatus> statusCache;
     private long lastResultWarnMs = 0;
     private long lastStatusWarnMs = 0;
-    public static double cameraOnTurretRightOffsetMeters = 0.127;
+    public static double cameraOnTurretRightOffsetMeters = -0.127;
     public static double cameraOnTurretForwardOffsetMeters = 0;
 
     public SmartLimelight3A(String configName, Limelight3A limelight) {

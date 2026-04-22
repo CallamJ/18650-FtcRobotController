@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.components.subsystems;
 import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
-import org.firstinspires.ftc.teamcode.components.mechanisms.Feeder;
+import org.firstinspires.ftc.teamcode.components.mechanisms.FeedWheels;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 import org.firstinspires.ftc.teamcode.hardware.ScoringColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
@@ -15,7 +15,7 @@ import java.util.*;
 public class StorageController {
     public static int requiredConsecutiveContentReads = 3;
 
-    private final Feeder feeder;
+    private final FeedSystem feeder;
     private final Indexer indexer;
     private final Collector collector;
     private final ScoringColorSensor frontSensor;
@@ -24,6 +24,7 @@ public class StorageController {
     private State state;
     private final SmartLEDIndicator leftLED, rightLED, frontLED;
     private boolean isJamCorrecting = false;
+    private final ElapsedTime readyingTimer = new ElapsedTime();
 
     /**
      * Slot 0: The slot that faces forward when the opmode is started.<br>
@@ -42,7 +43,7 @@ public class StorageController {
     private int frontDetectionStreak = 0;
 
     public StorageController(
-            Feeder feeder,
+            FeedSystem feeder,
             Indexer indexer,
             Collector collector,
             ScoringColorSensor frontSensor,
@@ -64,7 +65,12 @@ public class StorageController {
     }
 
     private ScoringElementColor getFrontDetection() {
-        return frontSensor.getScoringElementColor();
+        if(frontSensor.getClosestColorMatchName().equals("ARTIFACT_PURPLE")){
+            return ScoringElementColor.PURPLE;
+        } else if(frontSensor.getClosestColorMatchName().equals("ARTIFACT_GREEN")){
+            return ScoringElementColor.GREEN;
+        }
+        return ScoringElementColor.NONE;
     }
 
     public String getFrontClosestColorMatch() {
@@ -108,12 +114,7 @@ public class StorageController {
         return taskQueue.toString();
     }
 
-    public void bumpIndexerZero(double bumpVal){
-        indexer.bumpZero((int)( ((double) 8192 / 360) * bumpVal));
-    }
-
     public void tick(){
-        feeder.tick();
         indexer.tick();
         applyContentColor(leftLED, getLeftContent());
         applyContentColor(rightLED, getRightContent());
@@ -154,20 +155,15 @@ public class StorageController {
             case READYING_PURPLE: {
                 if(!indexer.isBusy()){
                     this.isFrontFresh = false;
-                    feeder.trigger();
+                    feeder.startFeeding();
                     this.state = State.LOADING_GREEN;
                 }
                 break;
             }
             case LOADING_GREEN:
             case LOADING_PURPLE: {
-                if(feeder.getState() == Feeder.State.RESTING){
-                    this.state = State.RESTING;
-                    Double lastTriggerDurationMs = feeder.getLastTriggerDurationMs();
-                    if(lastTriggerDurationMs != null && lastTriggerDurationMs < 2000){
-                        setLeftContent(SlotContent.OPEN);
-                    }
-                }
+                indexer.advanceIndexCounterclockwise();
+                this.state = State.BUMPING;
                 break;
             }
 
@@ -258,7 +254,7 @@ public class StorageController {
                         this.state = State.READYING_PURPLE;
                     } else {
                         // Already in position, trigger feeder immediately
-                        feeder.trigger();
+                        feeder.startFeeding();
                         this.state = State.LOADING_PURPLE;
                     }
                 } else {
@@ -274,7 +270,7 @@ public class StorageController {
                         this.state = State.READYING_GREEN;
                     } else {
                         // Already in position, trigger feeder immediately
-                        feeder.trigger();
+                        feeder.startFeeding();
                         this.state = State.LOADING_GREEN;
                     }
                 } else {
@@ -424,8 +420,8 @@ public class StorageController {
         }
     }
 
-    private ElapsedTime jamTimer = new ElapsedTime();
-    private ElapsedTime activeJamTimer = new ElapsedTime();
+    private final ElapsedTime jamTimer = new ElapsedTime();
+    private final ElapsedTime activeJamTimer = new ElapsedTime();
     private long lastTarget = 0;
     private void checkForIndexerJam(){
         if(indexer.isBusy() && Math.abs(indexer.getVelocity()) <= 25 && !isJamCorrecting){
