@@ -4,7 +4,8 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.components.subsystems.SingleFireStorageManager;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.List;
@@ -18,9 +19,9 @@ public class Red1VolleyCloseAuto extends AutoOpBase {
     @Override
     protected void onInitialize() {
         if (storageController != null) {
-            storageController.setLeftContent(StorageController.SlotContent.PURPLE);
-            storageController.setRightContent(StorageController.SlotContent.GREEN);
-            storageController.setFrontContent(StorageController.SlotContent.PURPLE);
+            storageController.setLeftContent(IndexerStorage.SlotContent.PURPLE);
+            storageController.setRightContent(IndexerStorage.SlotContent.GREEN);
+            storageController.setFrontContent(IndexerStorage.SlotContent.PURPLE);
         }
         if (driveBase != null && driveBase.getFollower() != null) {
             driveBase.getFollower().setStartingPose(start);

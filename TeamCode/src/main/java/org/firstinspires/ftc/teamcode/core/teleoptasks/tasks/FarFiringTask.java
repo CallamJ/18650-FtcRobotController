@@ -7,7 +7,8 @@ import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
 import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.components.subsystems.VolleyFireStorageManager;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.CancelReason;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TaskResult;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TeleOpTask;
@@ -53,9 +54,6 @@ public class FarFiringTask implements TeleOpTask {
     private double storageDrainStartSec = 0;
     private double waitForFullLastAddedSec = 0;
     private int waitForFullLastArtifactCount = 0;
-    private int remainingGreenLoads = 0;
-    private int remainingPurpleLoads = 0;
-
     public FarFiringTask(
             double baseBlueXInches,
             double baseBlueYInches,
@@ -92,10 +90,10 @@ public class FarFiringTask implements TeleOpTask {
     @Override
     public void start(TeleOpTaskContext ctx) {
         Follower follower = requireFollower(ctx);
-        StorageController storageController = requireStorage(ctx);
+        IndexerStorage indexerStorage = requireStorage(ctx);
         FireControlSystem fcs = requireFcs(ctx);
-        if (storageController == null) {
-            throw new IllegalStateException("Storage controller unavailable");
+        if (indexerStorage == null) {
+            throw new IllegalStateException("Indexer storage unavailable");
         }
         fcs.startLauncher();
         Pose current = follower.getPose();
@@ -128,18 +126,18 @@ public class FarFiringTask implements TeleOpTask {
                 return TaskResult.RUNNING;
             }
             case WAIT_FOR_FULL_RUNNING: {
-                StorageController storageController = requireStorage(ctx);
-                if (storageController == null) {
+                IndexerStorage indexerStorage = requireStorage(ctx);
+                if (indexerStorage == null) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
-                if (storageController.isFull()) {
+                if (indexerStorage.isFull()) {
                     state = State.RETURN_TO_START_INIT;
                     stateStartSec = ctx.runtimeSec();
                     return TaskResult.RUNNING;
                 }
 
-                int currentArtifactCount = getStoredArtifactCount(storageController);
+                int currentArtifactCount = getStoredArtifactCount(indexerStorage);
                 if (currentArtifactCount > waitForFullLastArtifactCount) {
                     waitForFullLastAddedSec = ctx.runtimeSec();
                 }
@@ -183,22 +181,28 @@ public class FarFiringTask implements TeleOpTask {
                 return TaskResult.RUNNING;
             }
             case PREPARE_FIRE_BURST: {
-                StorageController storageController = requireStorage(ctx);
-                if (storageController == null) {
+                IndexerStorage indexerStorage = requireStorage(ctx);
+                VolleyFireStorageManager volleyStorage = requireVolleyStorage(ctx);
+                if (indexerStorage == null || volleyStorage == null) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
-                remainingGreenLoads = storageController.countGreen();
-                remainingPurpleLoads = storageController.countPurple();
+                if (getStoredArtifactCount(indexerStorage) <= 0) {
+                    state = State.REPEAT_DELAY;
+                    stateStartSec = ctx.runtimeSec();
+                    return TaskResult.RUNNING;
+                }
+                volleyStorage.fireAny();
                 storageDrainStartSec = ctx.runtimeSec();
-                state = State.WAIT_FOR_FCS_READY_FOR_NEXT_LOAD;
+                state = State.WAIT_FOR_STORAGE_IDLE;
                 stateStartSec = ctx.runtimeSec();
                 return TaskResult.RUNNING;
             }
             case WAIT_FOR_FCS_READY_FOR_NEXT_LOAD: {
-                StorageController storageController = requireStorage(ctx);
+                IndexerStorage indexerStorage = requireStorage(ctx);
+                VolleyFireStorageManager volleyStorage = requireVolleyStorage(ctx);
                 FireControlSystem fcs = requireFcs(ctx);
-                if (storageController == null) {
+                if (indexerStorage == null || volleyStorage == null) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
@@ -206,41 +210,26 @@ public class FarFiringTask implements TeleOpTask {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
-                if (remainingGreenLoads + remainingPurpleLoads <= 0) {
+                if (getStoredArtifactCount(indexerStorage) <= 0) {
                     state = State.REPEAT_DELAY;
                     stateStartSec = ctx.runtimeSec();
                     return TaskResult.RUNNING;
                 }
-                if (storageController.allTasksComplete() && fcs.isTurretAligned() && fcs.isLauncherSpun()) {
-                    state = State.QUEUE_NEXT_LOAD;
+                if (volleyStorage.allTasksComplete() && fcs.isTurretAligned() && fcs.isLauncherSpun()) {
+                    state = State.PREPARE_FIRE_BURST;
                     stateStartSec = ctx.runtimeSec();
                 }
                 return TaskResult.RUNNING;
             }
             case QUEUE_NEXT_LOAD: {
-                StorageController storageController = requireStorage(ctx);
-                if (storageController == null) {
-                    state = State.FAILED;
-                    return TaskResult.FAILED;
-                }
-                if (remainingGreenLoads > 0) {
-                    storageController.loadGreen();
-                    remainingGreenLoads--;
-                } else if (remainingPurpleLoads > 0) {
-                    storageController.loadPurple();
-                    remainingPurpleLoads--;
-                } else {
-                    state = State.REPEAT_DELAY;
-                    stateStartSec = ctx.runtimeSec();
-                    return TaskResult.RUNNING;
-                }
                 state = State.WAIT_FOR_STORAGE_IDLE;
                 stateStartSec = ctx.runtimeSec();
                 return TaskResult.RUNNING;
             }
             case WAIT_FOR_STORAGE_IDLE: {
-                StorageController storageController = requireStorage(ctx);
-                if (storageController == null) {
+                IndexerStorage indexerStorage = requireStorage(ctx);
+                VolleyFireStorageManager volleyStorage = requireVolleyStorage(ctx);
+                if (indexerStorage == null || volleyStorage == null) {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
@@ -248,8 +237,12 @@ public class FarFiringTask implements TeleOpTask {
                     state = State.FAILED;
                     return TaskResult.FAILED;
                 }
-                if (storageController.allTasksComplete()) {
+                if (volleyStorage.allTasksComplete()) {
+                    if (getStoredArtifactCount(indexerStorage) <= 0) {
+                        state = State.REPEAT_DELAY;
+                    } else {
                     state = State.WAIT_FOR_FCS_READY_FOR_NEXT_LOAD;
+                    }
                     stateStartSec = ctx.runtimeSec();
                 }
                 return TaskResult.RUNNING;
@@ -303,8 +296,12 @@ public class FarFiringTask implements TeleOpTask {
         return Math.max(0, ctx.runtimeSec() - stateStartSec);
     }
 
-    private StorageController requireStorage(TeleOpTaskContext ctx) {
-        return ctx.storageController();
+    private IndexerStorage requireStorage(TeleOpTaskContext ctx) {
+        return ctx.indexerStorage();
+    }
+
+    private VolleyFireStorageManager requireVolleyStorage(TeleOpTaskContext ctx) {
+        return ctx.volleyStorage();
     }
 
     private FireControlSystem requireFcs(TeleOpTaskContext ctx) {
@@ -342,18 +339,18 @@ public class FarFiringTask implements TeleOpTask {
     }
 
     private void initWaitForFullTracking(TeleOpTaskContext ctx) {
-        StorageController storageController = requireStorage(ctx);
-        if (storageController == null) {
+        IndexerStorage indexerStorage = requireStorage(ctx);
+        if (indexerStorage == null) {
             waitForFullLastArtifactCount = 0;
             waitForFullLastAddedSec = ctx.runtimeSec();
             return;
         }
-        waitForFullLastArtifactCount = getStoredArtifactCount(storageController);
+        waitForFullLastArtifactCount = getStoredArtifactCount(indexerStorage);
         waitForFullLastAddedSec = ctx.runtimeSec();
     }
 
-    private int getStoredArtifactCount(StorageController storageController) {
-        return Math.max(0, storageController.countGreen()) + Math.max(0, storageController.countPurple());
+    private int getStoredArtifactCount(IndexerStorage indexerStorage) {
+        return Math.max(0, indexerStorage.countGreen()) + Math.max(0, indexerStorage.countPurple());
     }
 
     private void cleanupDriveControl(TeleOpTaskContext ctx) {

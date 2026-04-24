@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.utilities;
 import androidx.annotation.Nullable;
 import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Turret;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 
@@ -42,7 +42,7 @@ public final class MatchStateStore {
 
     public static void saveSnapshot(
             @Nullable DriveBase driveBase,
-            @Nullable StorageController storageController,
+            @Nullable IndexerStorage indexerStorage,
             @Nullable Indexer indexer,
             @Nullable Turret turret,
             AllianceColor allianceColor,
@@ -64,10 +64,10 @@ public final class MatchStateStore {
             snapshot.poseHeadingDegrees = pose.heading();
         }
 
-        if (storageController != null) {
-            snapshot.frontContent = storageController.getFrontContent().name();
-            snapshot.rightContent = storageController.getRightContent().name();
-            snapshot.leftContent = storageController.getLeftContent().name();
+        if (indexerStorage != null) {
+            snapshot.frontContent = indexerStorage.getFrontContent().name();
+            snapshot.rightContent = indexerStorage.getRightContent().name();
+            snapshot.leftContent = indexerStorage.getLeftContent().name();
         }
 
         if (indexer != null) {
@@ -128,12 +128,12 @@ public final class MatchStateStore {
         }
     }
 
-    public static StorageController.SlotContent parseSlotContent(@Nullable String value, StorageController.SlotContent fallback) {
+    public static IndexerStorage.SlotContent parseSlotContent(@Nullable String value, IndexerStorage.SlotContent fallback) {
         if (value == null) {
             return fallback;
         }
         try {
-            return StorageController.SlotContent.valueOf(value);
+            return IndexerStorage.SlotContent.valueOf(value);
         } catch (IllegalArgumentException ignored) {
             return fallback;
         }

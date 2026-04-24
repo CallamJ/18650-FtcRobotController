@@ -9,7 +9,8 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.components.subsystems.SingleFireStorageManager;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
@@ -40,7 +41,7 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
-    protected static StorageController storageController;
+    protected static SingleFireStorageManager storageController;
     protected static Hood hood;
     protected static Turret turret;
     protected static FireControlSystem fcs;
@@ -161,7 +162,7 @@ public abstract class AutoOpBase extends OpModeCore {
         public Follower follower() { return driveBase != null ? driveBase.getFollower() : null; }
         public Collector collector() { return collector; }
         public Launcher launcher() { return launcher; }
-        public StorageController storageController() { return storageController; }
+        public SingleFireStorageManager storageController() { return storageController; }
         public SmartLimelight3A limelight() { return limelight; }
         public SmartLimelight3A.AprilTag latestObeliskTag() { return aprilTag; }
         public SmartLimelight3A.AprilTag.Type detectTagOrDefault(SmartLimelight3A.AprilTag.Type fallback) {
@@ -260,14 +261,18 @@ public abstract class AutoOpBase extends OpModeCore {
             frontCameraSensor = hardware
                     .getCamera("colorCamera", new Pose(0, 0, 0))
                     .asColorSensor();
-            storageController = new StorageController(
-                    feeder,
+            IndexerStorage indexerStorage = new IndexerStorage(
                     indexer,
-                    collector,
                     frontCameraSensor,
                     hardware.getLEDIndicator("leftLED"),
                     hardware.getLEDIndicator("rightLED"),
                     hardware.getLEDIndicator("frontLED")
+            );
+            storageController = new SingleFireStorageManager(
+                    feeder,
+                    indexer,
+                    collector,
+                    indexerStorage
             );
         } catch (Exception e) {
             prettyTelem.error("Storage system failed to initialize, skipping: " + e.getMessage());
@@ -533,7 +538,7 @@ public abstract class AutoOpBase extends OpModeCore {
             return;
         }
         SmartLimelight3A.AprilTag obeliskTag = aprilTag != null ? aprilTag : (limelight != null ? limelight.getFirstObelisk() : null);
-        MatchStateStore.saveSnapshot(driveBase, storageController, indexer, turret, allianceColor, obeliskTag);
+        MatchStateStore.saveSnapshot(driveBase, storageController == null ? null : storageController.indexerStorage(), indexer, turret, allianceColor, obeliskTag);
         lastMatchStateSaveMs = now;
     }
 
@@ -669,7 +674,7 @@ public abstract class AutoOpBase extends OpModeCore {
             double timeoutSec
     ) {
         return StepSpec.required(new AutoStep() {
-            private List<StorageController.SlotContent> pendingLoads;
+            private List<IndexerStorage.SlotContent> pendingLoads;
             private int queuedCount;
             private boolean waitingForStorageIdle;
 
@@ -715,10 +720,10 @@ public abstract class AutoOpBase extends OpModeCore {
                     return StepStatus.RUNNING;
                 }
 
-                StorageController.SlotContent next = pendingLoads.get(queuedCount);
-                if (next == StorageController.SlotContent.GREEN) {
+                IndexerStorage.SlotContent next = pendingLoads.get(queuedCount);
+                if (next == IndexerStorage.SlotContent.GREEN) {
                     storageController.loadGreen();
-                } else if (next == StorageController.SlotContent.PURPLE) {
+                } else if (next == IndexerStorage.SlotContent.PURPLE) {
                     storageController.loadPurple();
                 } else {
                     return StepStatus.FAILED;
@@ -731,32 +736,32 @@ public abstract class AutoOpBase extends OpModeCore {
         }, timeoutSec);
     }
 
-    private List<StorageController.SlotContent> getPatternLoadOrder(SmartLimelight3A.AprilTag.Type type) {
+    private List<IndexerStorage.SlotContent> getPatternLoadOrder(SmartLimelight3A.AprilTag.Type type) {
         SmartLimelight3A.AprilTag.Type selected = type != null ? type : DEFAULT_TAG_PATTERN;
         switch (selected) {
             case OBELISK_GPP:
                 return List.of(
-                        StorageController.SlotContent.GREEN,
-                        StorageController.SlotContent.PURPLE,
-                        StorageController.SlotContent.PURPLE
+                        IndexerStorage.SlotContent.GREEN,
+                        IndexerStorage.SlotContent.PURPLE,
+                        IndexerStorage.SlotContent.PURPLE
                 );
             case OBELISK_PGP:
                 return List.of(
-                        StorageController.SlotContent.PURPLE,
-                        StorageController.SlotContent.GREEN,
-                        StorageController.SlotContent.PURPLE
+                        IndexerStorage.SlotContent.PURPLE,
+                        IndexerStorage.SlotContent.GREEN,
+                        IndexerStorage.SlotContent.PURPLE
                 );
             case OBELISK_PPG:
                 return List.of(
-                        StorageController.SlotContent.PURPLE,
-                        StorageController.SlotContent.PURPLE,
-                        StorageController.SlotContent.GREEN
+                        IndexerStorage.SlotContent.PURPLE,
+                        IndexerStorage.SlotContent.PURPLE,
+                        IndexerStorage.SlotContent.GREEN
                 );
             default:
                 return List.of(
-                        StorageController.SlotContent.GREEN,
-                        StorageController.SlotContent.PURPLE,
-                        StorageController.SlotContent.PURPLE
+                        IndexerStorage.SlotContent.GREEN,
+                        IndexerStorage.SlotContent.PURPLE,
+                        IndexerStorage.SlotContent.PURPLE
                 );
         }
     }

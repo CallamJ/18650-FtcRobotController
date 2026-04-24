@@ -7,7 +7,8 @@ import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.components.subsystems.VolleyFireStorageManager;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
@@ -50,7 +51,8 @@ public class MainTeleOp extends TeleOpCore {
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
-    protected static StorageController storageController;
+    protected static IndexerStorage indexerStorage;
+    protected static VolleyFireStorageManager volleyStorageManager;
     protected static SmartCameraColorSensor frontCameraSensor;
     protected static Hood hood;
     protected static FireControlSystem fcs;
@@ -116,7 +118,8 @@ public class MainTeleOp extends TeleOpCore {
         collector = null;
         indexer = null;
         launcher = null;
-        storageController = null;
+        indexerStorage = null;
+        volleyStorageManager = null;
         if (frontCameraSensor != null) {
             try {
                 frontCameraSensor.close();
@@ -188,14 +191,18 @@ public class MainTeleOp extends TeleOpCore {
             frontCameraSensor = hardware
                     .getCamera("colorCamera", new Pose(0, 0, 0))
                     .asColorSensor();
-            storageController = new StorageController(
-                    feeder,
+            indexerStorage = new IndexerStorage(
                     indexer,
-                    collector,
                     frontCameraSensor,
                     hardware.getLEDIndicator("leftLED"),
                     hardware.getLEDIndicator("rightLED"),
                     hardware.getLEDIndicator("frontLED")
+            );
+            volleyStorageManager = new VolleyFireStorageManager(
+                    feeder,
+                    indexer,
+                    collector,
+                    indexerStorage
             );
             applyPersistedStorageStateIfAvailable();
         } catch (Exception e) {
@@ -228,7 +235,8 @@ public class MainTeleOp extends TeleOpCore {
         teleOpTaskManager = new TeleOpTaskManager(
                 new TeleOpTaskContext(
                         () -> driveBase,
-                        () -> storageController,
+                        () -> indexerStorage,
+                        () -> volleyStorageManager,
                         () -> fcs,
                         () -> allianceColor,
                         this::getRuntime,
@@ -310,29 +318,39 @@ public class MainTeleOp extends TeleOpCore {
             }
         }
 
-        if(storageController != null){
+        if(volleyStorageManager != null){
             if(gamepad1.leftBumperPressed()){
                 indexer.advanceIndexCounterclockwise();
-                storageController.dropFreshFlag();
+                volleyStorageManager.dropFreshFlag();
             }
             if(gamepad1.rightBumperPressed()){
                 indexer.advanceIndexClockwise();
-                storageController.dropFreshFlag();
+                volleyStorageManager.dropFreshFlag();
             }
             if(gamepad1.dpadLeftPressed()){
                 if(fcs == null || fcs.isLauncherRunning()) {
-                    storageController.loadGreen();
+                    volleyStorageManager.firePPG();
                 }
             }
             if(gamepad1.dpadRightPressed()){
                 if(fcs == null || fcs.isLauncherRunning()) {
-                    storageController.loadPurple();
+                    volleyStorageManager.firePGP();
+                }
+            }
+            if(gamepad1.dpadUpPressed()){
+                if(fcs == null || fcs.isLauncherRunning()){
+                    volleyStorageManager.fireGPP();
+                }
+            }
+            if(gamepad1.dpadDownPressed()){
+                if(fcs == null || fcs.isLauncherRunning()){
+                    volleyStorageManager.fireAny();
                 }
             }
             if(gamepad1.startPressed()){
-                storageController.setLeftContent(StorageController.SlotContent.OPEN);
-                storageController.setRightContent(StorageController.SlotContent.OPEN);
-                storageController.setFrontContent(StorageController.SlotContent.OPEN);
+                indexerStorage.setLeftContent(IndexerStorage.SlotContent.OPEN);
+                indexerStorage.setRightContent(IndexerStorage.SlotContent.OPEN);
+                indexerStorage.setFrontContent(IndexerStorage.SlotContent.OPEN);
             }
         }
         if (gamepad1.sharePressed()) {
@@ -387,8 +405,8 @@ public class MainTeleOp extends TeleOpCore {
 
     @Override
     protected void onTick(){
-        if(storageController != null){
-            storageController.tick();
+        if(volleyStorageManager != null){
+            volleyStorageManager.tick();
         }
 
         if(fcs != null && runFCS){
@@ -435,18 +453,18 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     private void applyPersistedStorageStateIfAvailable() {
-        if (startupSnapshot == null || storageController == null || indexer == null) {
+        if (startupSnapshot == null || indexerStorage == null || indexer == null) {
             return;
         }
 
-        storageController.setFrontContent(
-                MatchStateStore.parseSlotContent(startupSnapshot.frontContent, StorageController.SlotContent.OPEN)
+        indexerStorage.setFrontContent(
+                MatchStateStore.parseSlotContent(startupSnapshot.frontContent, IndexerStorage.SlotContent.OPEN)
         );
-        storageController.setRightContent(
-                MatchStateStore.parseSlotContent(startupSnapshot.rightContent, StorageController.SlotContent.OPEN)
+        indexerStorage.setRightContent(
+                MatchStateStore.parseSlotContent(startupSnapshot.rightContent, IndexerStorage.SlotContent.OPEN)
         );
-        storageController.setLeftContent(
-                MatchStateStore.parseSlotContent(startupSnapshot.leftContent, StorageController.SlotContent.OPEN)
+        indexerStorage.setLeftContent(
+                MatchStateStore.parseSlotContent(startupSnapshot.leftContent, IndexerStorage.SlotContent.OPEN)
         );
         indexer.setTargetIndex(startupSnapshot.indexerTargetIndex);
     }
@@ -458,7 +476,7 @@ public class MainTeleOp extends TeleOpCore {
             return;
         }
         SmartLimelight3A.AprilTag obeliskTag = limelight != null ? limelight.getFirstObelisk() : null;
-        MatchStateStore.saveSnapshot(driveBase, storageController, indexer, turret, allianceColor, obeliskTag);
+        MatchStateStore.saveSnapshot(driveBase, indexerStorage, indexer, turret, allianceColor, obeliskTag);
         lastMatchStateSaveMs = now;
     }
 
@@ -481,11 +499,11 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Launcher Spun", () -> fcs != null && fcs.isLauncherSpun())
                 .addData("Turret Aligned", () -> fcs != null && fcs.isTurretAligned());
         prettyTelem.addLine("Storage")
-                .addData("G/P/O", () -> storageController == null
+                .addData("G/P/O", () -> indexerStorage == null
                         ? "n/a"
-                        : storageController.countGreen() + "/" + storageController.countPurple() + "/" + storageController.countOpen())
-                .addData("Full", () -> storageController != null && storageController.isFull())
-                .addData("Busy", () -> storageController != null && !storageController.allTasksComplete());
+                        : indexerStorage.countGreen() + "/" + indexerStorage.countPurple() + "/" + indexerStorage.countOpen())
+                .addData("Full", () -> indexerStorage != null && indexerStorage.isFull())
+                .addData("Busy", () -> volleyStorageManager != null && !volleyStorageManager.allTasksComplete());
         prettyTelem.addLine("Relocalize")
                 .addData("Status", () -> obeliskRelocalizeStatus);
         prettyTelem.addLine("Controls")
@@ -550,21 +568,19 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Power", () -> turret == null ? "n/a" : turret.getPower())
                 .addData("Bearing To Tag", () -> FireControlSystem.bearingToDepot);
         prettyTelem.addLine("Storage Controller")
-                .addData("State", () -> storageController == null ? "UNKNOWN" : storageController.getState())
-                .addData("Front Content", () -> storageController == null ? "n/a" : storageController.getFrontContent())
-                .addData("Right Content", () -> storageController == null ? "n/a" : storageController.getRightContent())
-                .addData("Left Content", () -> storageController == null ? "n/a" : storageController.getLeftContent())
+                .addData("State", () -> volleyStorageManager == null ? "UNKNOWN" : volleyStorageManager.getState())
+                .addData("Front Content", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontContent())
+                .addData("Right Content", () -> indexerStorage == null ? "n/a" : indexerStorage.getRightContent())
+                .addData("Left Content", () -> indexerStorage == null ? "n/a" : indexerStorage.getLeftContent())
                 .addData("Indexer Velocity", () -> indexer == null ? "n/a" : indexer.getVelocity())
-                .addData("Active Task", () -> storageController == null ? "None" : storageController.getActiveTaskName())
-                .addData("Is Jam Correcting", () -> storageController != null && storageController.isJamCorrecting())
-                .addData("Jam Timer", () -> storageController == null ? "n/a" : storageController.getJamTimerMs())
-                .addData("Task Queue", () -> storageController == null ? "[]" : storageController.getTaskQueueSummary());
+                .addData("Active Task", () -> volleyStorageManager == null ? "None" : volleyStorageManager.getActiveTaskName())
+                .addData("Task Queue", () -> volleyStorageManager == null ? "[]" : volleyStorageManager.getTaskQueueSummary());
         prettyTelem.addLine("Color Sensor")
-                .addData("Sensor Color", () -> storageController == null ? "NONE" : storageController.getFrontSensorColorName())
-                .addData("Closest Match", () -> storageController == null ? "N/A" : storageController.getFrontClosestColorMatch())
-                .addData("Front Sensor Hue", () -> storageController == null ? "n/a" : storageController.getFrontSensorHue())
-                .addData("Front Sensor Saturation", () -> storageController == null ? "n/a" : storageController.getFrontSensorSaturation())
-                .addData("Front Sensor Value", () -> storageController == null ? "n/a" : storageController.getFrontSensorValue());
+                .addData("Sensor Color", () -> indexerStorage == null ? "NONE" : indexerStorage.getFrontSensorColorName())
+                .addData("Closest Match", () -> indexerStorage == null ? "N/A" : indexerStorage.getFrontClosestColorMatch())
+                .addData("Front Sensor Hue", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorHue())
+                .addData("Front Sensor Saturation", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorSaturation())
+                .addData("Front Sensor Value", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorValue());
     }
 
 //    private void processObeliskRelocalization() {

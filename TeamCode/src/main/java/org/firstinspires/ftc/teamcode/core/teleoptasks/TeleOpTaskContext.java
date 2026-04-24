@@ -3,7 +3,8 @@ package org.firstinspires.ftc.teamcode.core.teleoptasks;
 import com.pedropathing.follower.Follower;
 import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.StorageController;
+import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.components.subsystems.VolleyFireStorageManager;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.function.Consumer;
@@ -11,7 +12,8 @@ import java.util.function.Supplier;
 
 public class TeleOpTaskContext {
     private final Supplier<DriveBase> driveBaseSupplier;
-    private final Supplier<StorageController> storageControllerSupplier;
+    private final Supplier<IndexerStorage> indexerStorageSupplier;
+    private final Supplier<VolleyFireStorageManager> volleyStorageSupplier;
     private final Supplier<FireControlSystem> simpleFcsSupplier;
     private final Supplier<MatchStateStore.AllianceColor> allianceSupplier;
     private final Supplier<Double> runtimeSecSupplier;
@@ -19,14 +21,16 @@ public class TeleOpTaskContext {
 
     public TeleOpTaskContext(
             Supplier<DriveBase> driveBaseSupplier,
-            Supplier<StorageController> storageControllerSupplier,
+            Supplier<IndexerStorage> indexerStorageSupplier,
+            Supplier<VolleyFireStorageManager> volleyStorageSupplier,
             Supplier<FireControlSystem> simpleFcsSupplier,
             Supplier<MatchStateStore.AllianceColor> allianceSupplier,
             Supplier<Double> runtimeSecSupplier,
             Consumer<String> warningLogger
     ) {
         this.driveBaseSupplier = driveBaseSupplier;
-        this.storageControllerSupplier = storageControllerSupplier;
+        this.indexerStorageSupplier = indexerStorageSupplier;
+        this.volleyStorageSupplier = volleyStorageSupplier;
         this.simpleFcsSupplier = simpleFcsSupplier;
         this.allianceSupplier = allianceSupplier;
         this.runtimeSecSupplier = runtimeSecSupplier;
@@ -37,8 +41,12 @@ public class TeleOpTaskContext {
         return driveBaseSupplier.get();
     }
 
-    public StorageController storageController() {
-        return storageControllerSupplier.get();
+    public IndexerStorage indexerStorage() {
+        return indexerStorageSupplier.get();
+    }
+
+    public VolleyFireStorageManager volleyStorage() {
+        return volleyStorageSupplier.get();
     }
 
     public FireControlSystem simpleFcs() {

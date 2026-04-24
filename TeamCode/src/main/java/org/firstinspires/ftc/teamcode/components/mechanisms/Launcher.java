@@ -18,7 +18,7 @@ public class Launcher extends MotorVelocityAxisComponent {
     public static double maxVoltage = 14;
     private final DataFilter voltageFilter = new RollingAverage(100);
 
-    public static float ticksPerDegree = (288f/360f);
+    public static float ticksPerDegree = (28f/360f);
 
     public Launcher(Hardware hardware, SmartMotor motor) {
         super(
