@@ -14,7 +14,6 @@ public class MotorIdentifier extends TeleOpCore {
 
     @Override
     protected void onInitialize() {
-        super.onInitialize();
         this.leftFront = hardware.getMotor("LFront");
         this.leftRear = hardware.getMotor("LRear");
         this.rightFront = hardware.getMotor("RFront");

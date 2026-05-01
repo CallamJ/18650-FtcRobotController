@@ -2,68 +2,177 @@
 
 ## Repo Context
 
-- This repository is Team 18650's FTC SDK fork for robot code used for the Decode season, and originally developed for Into the Deep.
-- The codebase is primarily owned by Callam, lead student programmer.
-- Eben, a recent team alumnus, sometimes contributes technical help.
-- Peter, the head coach, occasional helps work through problems.
-- Much of the code is organic, hand-written, and iteratively refactored over roughly the last 24 months. Expect uneven maturity across subsystems.
+- This is Team 18650's FTC SDK fork for Decode, built on top of work that started during Into the Deep.
+- Callam is the primary owner and lead student programmer. Most agent help should assume his normal use case: iterating on real robot code, tuning behavior, and fixing integration problems without losing local context.
+- Eben and Peter may contribute, but `TeamCode/` is fundamentally a student-owned codebase and changes should respect that style and intent.
+- The code is hand-written and heavily evolved over roughly two seasons. Some abstractions are solid, some are mid-refactor, and some are only "real" because the current opmodes use them.
 
-## Current Operating Mode
+## Default Agent Stance
 
-- During competition, optimize for reliability, debuggability, and match readiness.
-- Prefer targeted fixes over broad refactors.
-- Avoid style-only churn, speculative architecture cleanup, and risky rewrites unless explicitly requested.
-- When a subsystem was recently rebuilt, assume regressions are more likely to come from integration gaps, state handling, lifecycle ordering, hardware assumptions, or missed edge cases than from isolated syntax mistakes.
+- Optimize first for helping Callam move the robot code forward safely and quickly.
+- Prefer understanding the active opmode and its live wiring over making assumptions from class names alone.
+- Treat `MainTeleOp` and `AutoOpBase` as the highest-signal entrypoints for what the robot currently does.
+- Make small, behavior-aware edits unless a larger refactor is explicitly requested.
+- Do not remove or "simplify" state bridges until you confirm what cross-opmode behavior they preserve.
 
-## Project Layout
+## Project Map
 
-- `TeamCode/` is the main team-owned code and the default place for edits.
-- `FtcRobotController/` mostly tracks the upstream FTC SDK app and should only be changed for a clear reason.
-- `doc/` and `.github/` contain supporting documentation and workflow guidance.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/core/`
+  Lifecycle and opmode framework.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/core/implementations/`
+  Real opmodes. This is where current robot behavior is easiest to understand.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/mechanisms/`
+  Low-level robot mechanisms such as `DriveBase`, `Turret`, `Launcher`, `Indexer`, `Collector`, `FeedRamp`, and `FeedWheels`.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/subsystems/`
+  Coordination layers that sit above mechanisms, especially storage and firing logic.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/`
+  Smart FTC hardware wrappers, cache management, and sensor configuration.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/drive/`
+  Drive configuration and Pedro Pathing constants.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/utilities/`
+  Persistent storage, match-state carryover, telemetry helpers, and small support types.
+- `FtcRobotController/`
+  Mostly upstream FTC SDK app code. Avoid edits unless the reason is explicit.
 
-## Tech Stack
+## Primary Entry Points
 
-- Android Studio Ladybug-era FTC SDK project
-- Gradle multi-module Android build
-- Main modules: `:TeamCode` and `:FtcRobotController`
-- Primary language: Java
+- `core/implementations/MainTeleOp.java`
+  The main match teleop. If a change affects driver controls, firing flow, intake/storage behavior, match-state persistence, or task-assisted teleop, start here.
+- `core/implementations/AutoOpBase.java`
+  The autonomous framework. Most autos inherit from this and build plans with `StepSpec`.
+- `core/implementations/SimpleTeleOp.java`
+  Reduced teleop used for simpler mechanism testing and fallback behavior.
+- `core/implementations/*Diagnostics*`, `*Tuning*`, `ServoTester`, `MotorIdentifier`, `PotentiometerTest`
+  Utility opmodes used for calibration, diagnostics, and hardware bring-up.
+- `core/OpModeCore.java`
+  The base lifecycle. It owns `Hardware`, `PersistentStorage`, telemetry setup, and the per-loop cache invalidation flow.
+- `core/TeleOpCore.java`
+  Adds stable edge-detected gamepad handling on top of `OpModeCore`.
 
-## Working Norms For Agents
+## Key Non-Obvious Contracts
 
-- Preserve student ownership. Make the smallest change that materially improves robot behavior or code safety.
-- Read surrounding code before editing; this repo contains ongoing refactors and partially migrated patterns.
-- Do not assume abstractions are fully finished just because they look framework-like.
-- Treat hardware wrappers, opmode lifecycle code, teleop task flow, and autonomous sequencing as high-risk areas that deserve extra review.
-- If there are uncommitted changes, do not revert them unless explicitly asked.
-- Keep comments brief and only where they clarify non-obvious behavior.
+- `OpModeCore.frameworkTick()` invalidates hardware caches every loop through `hardware.invalidateCaches()`. Hardware wrappers depend on that refresh cycle.
+- Methods beginning with `on` in the opmode framework are intended to be true hooks. Implementers should not need to call `super.on...()` in normal usage.
+- `TeleOpCore` snapshots initial gamepad state through framework pre-init plumbing, not through subclass `super.onInitialize()` calls.
+- `Hardware` is now per-opmode, not global static state. Do not reintroduce the old `Hardware.init(...)` mental model.
+- Several opmodes keep subsystem references in static fields and explicitly reset them on init. That is intentional protection against stale state across FTC opmode reruns.
+- `@Configurable` is an annotation used on classes to expose `public static` tuning fields at runtime from the Control Hub web interface. These fields are live development surfaces and often matter more than hard-coded defaults in the file.
 
-## Reliability Priorities
+## Active Control Surfaces
 
-- Favor fixes that reduce the chance of deadlocks, null state, stale cached hardware state, unexpected control handoff, task cancellation bugs, and telemetry-silent failures.
-- Prefer explicit guards, sane fallbacks, and clearer failure behavior over cleverness.
-- For match-day changes, call out anything that still needs on-robot validation.
+- `core/implementations/MainTeleOp.java`
+  Source of truth for the current match control map, teleop task behavior, and how subsystems are actually wired together.
+- `core/implementations/AutoOpBase.java`
+  Source of truth for how autonomous initialization, firing readiness, obelisk acquisition assist, and path-step execution currently work.
+- `drive/pedroPathing/Constants.java`
+  Shared follower and drivetrain tuning that affects both teleop follower-assisted behavior and autonomous.
 
-## Review Priorities
+## State Machines And Coordinators
 
-- Start reviews with the most recent commits and the files touched by active subsystem rewrites.
-- Look first for behavioral regressions, incorrect assumptions about FTC lifecycle timing, hardware initialization mistakes, state persistence issues, and task sequencing bugs.
-- Be skeptical of changes affecting:
-  - `hardware/`
-  - `core/`
-  - `core/teleoptasks/`
-  - `components/mechanisms/`
-  - `components/subsystems/`
+- `components/subsystems/FireControlSystem.java`
+  Firing/aiming coordinator. Key fields: `runLauncher`, `fallbackVelocity`, `allianceColor`, `depotAutoAimEnabled`, `firing`, and static `bearingToDepot`.
+  State enum: `SEEKING`, `READYING`, `READY`.
+  Hidden behavior: it falls back to depot-pose aiming when tags are not visible if configured to do so.
+- `components/subsystems/VolleyFireStorageManager.java`
+  Queue-driven storage/fire coordinator used by current teleop and auto flow.
+  State enum: `RESTING`, `BUMPING`, `PREPARING_TO_FIRE`, `ENGAGING_FEEDER`, `FIRING`, `ENDING_FIRING`.
+  Task enum: `READY_FOR_COLLECTION`, bump tasks, and fire-pattern tasks.
+  Hidden behavior: it owns jam-correction timing and coordinates `Indexer`, `FeedSystem`, `IndexerStorage`, and `FireControlSystem`.
+- `components/subsystems/IndexerStorage.java`
+  Logical model of the three storage slots.
+  Important fields/concepts: slot content, front-slot freshness, front sensor distance gating, and color classification.
+  Hidden behavior: slot identity is tied to the physical indexer position through `Indexer.getNormalizedCurrentIndex()`, so content appears to "move" as the indexer rotates.
+- `core/teleoptasks/tasks/FarFiringTask.java`
+  Teleop automation state machine for driving to base, waiting for storage fill, returning, and draining shots.
+  It depends on `TeleOpTaskContext` suppliers rather than concrete subsystem ownership.
+- `core/implementations/AutoOpBase.java`
+  Autonomous plan runner. `StepSpec`, `TimeoutAction`, `PlanResult`, and `AutoContext` together form a mini state-machine framework for autos.
 
-## Build And Validation
+## Implicit Bridges Between Systems
 
-- Prefer narrow validation first, then broader checks if needed.
-- Useful commands:
+- `utilities/MatchStateStore.java`
+  Persists alliance, pose, indexer slot content, index targets, turret state, and the latest seen obelisk metadata across opmodes.
+  This is a real bridge between runs, not just debugging support.
+- `utilities/PersistentStorage.java`
+  Backing store for `MatchStateStore` and persisted color tuning. Data survives opmode switches and app restarts through Android `SharedPreferences`.
+- Legacy color-tuning paths around `hardware/ColorMatchConfig.java`
+  Callam considers this file obsolete. It may still be referenced by wrappers or old tuning opmodes, but agents should not assume it is the current source of truth for live robot behavior unless the active opmode clearly depends on it.
+- `core/teleoptasks/TeleOpTaskContext.java`
+  Bridges `MainTeleOp` to task automation through suppliers for drive, storage, FCS, alliance, and runtime.
+  Tasks may start successfully even when some suppliers later return `null`, so check both the context and the consumer task logic.
+- `components/mechanisms/DriveBase.java`
+  Has two operating modes: follower-backed when `startFollower` is `true`, and simpler mecanum/localizer mode when `false`.
+  That changes which Pedro objects exist and which movement APIs are meaningful.
+
+## Main TeleOp Wiring
+
+- `MainTeleOp` is currently the place where these pieces meet:
+  `DriveBase` + Pedro follower, `FeedSystem`, `Indexer`, `Collector`, `IndexerStorage`, `VolleyFireStorageManager`, `FireControlSystem`, `SmartLimelight3A`, `MatchStateStore`, and `TeleOpTaskManager`.
+- `MainTeleOp` also owns:
+  startup snapshot loading, periodic match-state saving, alliance toggling, maintenance-mode controls, and manual fallback controls when tasks are inactive.
+- If behavior seems inconsistent with a subsystem's standalone implementation, trust the live wiring in `MainTeleOp` first.
+
+## Auto Wiring
+
+- `AutoOpBase` owns subsystem setup for autos, plan execution, autonomous alliance selection, and periodic state persistence.
+- Child autos typically override `getAutonomousAllianceColor()` and `buildPlan()`.
+- Obelisk acquisition assist is handled inside `AutoOpBase`, not inside individual auto plans, unless a child opmode deliberately overrides around it.
+
+## Hardware And Sensor Notes
+
+- `hardware/Hardware.java`
+  Per-opmode device registry and cache owner.
+- Smart wrappers in `hardware/`
+  Often expose both cached state and raw-device access patterns. Read the wrapper before assuming raw FTC device semantics still apply.
+- `hardware/ColorMatchConfig.java`
+  Treat as legacy/obsolete unless the task is specifically about maintaining or removing old color-tuning paths.
+- `frontColorSensor`
+  Current storage logic expects distance sensing, not just color sensing.
+- `SmartLimelight3A`
+  AprilTag visibility affects both aiming and persisted match-state context.
+
+## How To Read This Code Effectively
+
+- Start from the active opmode, then follow concrete subsystem construction from there.
+- When behavior is surprising, inspect:
+  1. opmode wiring
+  2. subsystem coordinator
+  3. mechanism
+  4. smart hardware wrapper
+- Be careful with stale abstractions and renamed classes. Some files represent older patterns that have been partially replaced.
+- Do not assume a file is current just because it is widely referenced. Some legacy files remain in support of older wrappers, tuning tools, or unfinished migrations.
+- Prefer caller-driven truth over old helper classes that look authoritative but are no longer the main path.
+
+## Editing Guidance
+
+- Preserve Callam's control of architecture unless the requested task clearly requires structural change.
+- Keep edits localized when working near teleop bindings, autonomous plans, or subsystem state transitions.
+- If you change initialization order, cached hardware behavior, persisted keys, or supplier-based task wiring, explain the behavioral impact explicitly.
+- Do not "clean up" implicit persistence or control-handoff behavior unless you can describe what user-visible behavior replaces it.
+
+## Validation Guidance
+
+- Useful local commands:
   - `.\gradlew.bat :TeamCode:assembleDebug`
   - `.\gradlew.bat lint`
-- A green build is not enough for robot-facing changes; note what still requires driver station or on-robot testing.
+- A compile is necessary but not sufficient for robot-facing changes.
+- For subsystem or opmode edits, call out what still needs driver-station or on-robot validation.
 
-## Communication
+## Keeping This File Current
 
-- Be direct and concrete.
-- When recommending a fix, explain the expected robot behavior change and the risk if left unfixed.
-- If time is short before matches, prioritize the few changes most likely to improve reliability tomorrow.
+- Update this file whenever any of the following change:
+  - the primary match teleop opmode
+  - the autonomous framework shape
+  - subsystem ownership boundaries
+  - persistent-storage keys or cross-opmode state behavior
+  - teleop task bridges
+  - major state machines
+  - the expected source of truth for driver bindings
+- When adding a new subsystem or coordinator, add:
+  - where it is constructed
+  - which opmodes actually use it
+  - its main state enum or queue model, if any
+  - any hidden dependencies on other systems
+- When removing or replacing a state machine, delete or rewrite the corresponding section here in the same change.
+- If a refactor changes which file is the real control surface, update the "Primary Entry Points" and "Active Control Surfaces" sections immediately.
+- If you discover this file is stale during a task, fix `AGENTS.md` as part of that task rather than leaving a note for later.
