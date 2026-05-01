@@ -22,10 +22,10 @@ import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
-import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
+import org.firstinspires.ftc.teamcode.utilities.RollingPercentileWindow;
 
 @Configurable
 @TeleOp(name = "1 - Main TeleOp")
@@ -47,7 +47,10 @@ public class MainTeleOp extends TeleOpCore {
     protected static SmartLimelight3A limelight;
     protected static Limelight3A limelight3A;
     protected ElapsedTime tickTimer = new ElapsedTime();
-    protected DataFilter tickTimeFilter = new RollingAverage(10);
+    protected RollingAverage tickTimeAverage = new RollingAverage(10);
+    protected RollingPercentileWindow tickTimePercentiles = new RollingPercentileWindow(200);
+    protected double lastTickTimeMs = 0;
+    protected double maxObservedTickTimeMs = 0;
 
 
     public static double launchVelocity = 2150;
@@ -55,6 +58,7 @@ public class MainTeleOp extends TeleOpCore {
     public static double matchStateFreshnessMs = 10000;
     public static double matchStateSaveIntervalMs = 500;
     public static double teleOpFollowerMaxPower = 1.0;
+    public static int tickTimePercentileWindow = 200;
     public static MatchStateStore.AllianceColor defaultAllianceColor = MatchStateStore.AllianceColor.BLUE;
     public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
     public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
@@ -106,6 +110,10 @@ public class MainTeleOp extends TeleOpCore {
         teleOpTaskManager = null;
         clearLeftSlotWhenFeederReturns = false;
         runFCS = true;
+        tickTimeAverage = new RollingAverage(10);
+        tickTimePercentiles = new RollingPercentileWindow(Math.max(1, tickTimePercentileWindow));
+        lastTickTimeMs = 0;
+        maxObservedTickTimeMs = 0;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
@@ -391,6 +399,17 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         persistMatchStateIfDue(false);
+        recordTickTimeSample();
+    }
+
+    private void recordTickTimeSample() {
+        double tickTimeMs = tickTimer.milliseconds();
+        lastTickTimeMs = tickTimeMs;
+        tickTimeAverage.compute(tickTimeMs);
+        tickTimePercentiles.compute(tickTimeMs);
+        if (tickTimeMs > maxObservedTickTimeMs) {
+            maxObservedTickTimeMs = tickTimeMs;
+        }
     }
 
     private void applyPersistedPoseIfAvailable() {
@@ -441,7 +460,14 @@ public class MainTeleOp extends TeleOpCore {
     }
 
     private void registerDebugTelemetry() {
-        prettyTelem.addData("Tick Time", () -> tickTimeFilter.compute(tickTimer.milliseconds()));
+        prettyTelem.addLine("Loop Timing")
+                .addData("Last Tick (ms)", () -> lastTickTimeMs)
+                .addData("Avg Tick (ms)", tickTimeAverage::getAverage)
+                .addData("P50 (ms)", () -> tickTimePercentiles.getPercentile(50))
+                .addData("P95 (ms)", () -> tickTimePercentiles.getPercentile(95))
+                .addData("P99 (ms)", () -> tickTimePercentiles.getPercentile(99))
+                .addData("Max Tick (ms)", () -> maxObservedTickTimeMs)
+                .addData("Samples", tickTimePercentiles::size);
 
         prettyTelem.addLine("Match")
                 .addData("Alliance", () -> allianceColor.name())
