@@ -16,7 +16,6 @@ public class ColorCamDiagnosticsTeleOp extends TeleOpCore {
 
     @Override
     protected void onInitialize() {
-        super.onInitialize();
         camera = hardware.getCamera("colorCamera", new Pose(0, 0, 0));
         colorSensor = camera.asColorSensor();
         portal = colorSensor.getVisionPortal();

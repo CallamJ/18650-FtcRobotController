@@ -11,7 +11,6 @@ public class ContinuousServoTest extends TeleOpCore {
 
     @Override
     protected void onInitialize() {
-        super.onInitialize();
         left = hardware.getServo("leftFeedRampServo");
         right = hardware.getServo("rightFeedRampServo");
         prettyTelem.addData("left", left::getPosition);

@@ -25,8 +25,6 @@ public class SimpleTeleOp extends TeleOpCore {
     @Override
     protected void onInitialize() {
         //noinspection DuplicatedCode
-        super.onInitialize();
-
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
         configBuilder.leftRear("LRear", Direction.FORWARD);
