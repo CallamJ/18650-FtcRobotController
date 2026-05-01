@@ -7,15 +7,13 @@ import com.pedropathing.paths.PathChain;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
-import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
-import org.firstinspires.ftc.teamcode.components.subsystems.SingleFireStorageManager;
+import org.firstinspires.ftc.teamcode.components.subsystems.*;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
+import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
@@ -41,7 +39,8 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static Collector collector;
     protected static Indexer indexer;
     protected static Launcher launcher;
-    protected static SingleFireStorageManager storageController;
+    protected static SmartColorSensor frontColorSensor;
+    protected static VolleyFireStorageManager storageController;
     protected static Hood hood;
     protected static Turret turret;
     protected static FireControlSystem fcs;
@@ -162,7 +161,7 @@ public abstract class AutoOpBase extends OpModeCore {
         public Follower follower() { return driveBase != null ? driveBase.getFollower() : null; }
         public Collector collector() { return collector; }
         public Launcher launcher() { return launcher; }
-        public SingleFireStorageManager storageController() { return storageController; }
+        public VolleyFireStorageManager storageController() { return storageController; }
         public SmartLimelight3A limelight() { return limelight; }
         public SmartLimelight3A.AprilTag latestObeliskTag() { return aprilTag; }
         public SmartLimelight3A.AprilTag.Type detectTagOrDefault(SmartLimelight3A.AprilTag.Type fallback) {
@@ -216,7 +215,6 @@ public abstract class AutoOpBase extends OpModeCore {
         configBuilder.rightRear("RRear", Direction.FORWARD);
 
         telemetry.setMsTransmissionInterval(11);
-        Constants.setMecanumMaxPower(autoFollowerMaxPower);
 
         try {
             limelight = hardware.getLimelight("limelight");
@@ -236,6 +234,7 @@ public abstract class AutoOpBase extends OpModeCore {
 
         try {
             driveBase = new DriveBase(hardwareMap, configBuilder.build(), true);
+            prettyTelem.info("Drive base initialized");
         } catch (Exception e) {
             prettyTelem.error("Drive base failed to initialize, skipping: " + e.getMessage());
         }
@@ -258,21 +257,27 @@ public abstract class AutoOpBase extends OpModeCore {
         try {
             indexer = new Indexer(hardware.getMotor("indexerMotor", true));
             collector = new Collector(hardware.getMotor("collectorMotor"));
-            frontCameraSensor = hardware
-                    .getCamera("colorCamera", new Pose(0, 0, 0))
-                    .asColorSensor();
+            frontColorSensor = hardware.getColorSensor("frontColorSensor");
+            if(frontColorSensor != null) {
+                if(!frontColorSensor.hasDistanceSensing()){
+                    prettyTelem.error("Front color sensor must have distance sensing, but does not.");
+                }
+            } {
+                prettyTelem.error("Color sensor failed to initialize.");
+            }
             IndexerStorage indexerStorage = new IndexerStorage(
                     indexer,
-                    frontCameraSensor,
+                    frontColorSensor,
                     hardware.getLEDIndicator("leftLED"),
                     hardware.getLEDIndicator("rightLED"),
                     hardware.getLEDIndicator("frontLED")
             );
-            storageController = new SingleFireStorageManager(
+            storageController = new VolleyFireStorageManager(
                     feeder,
                     indexer,
                     collector,
-                    indexerStorage
+                    indexerStorage,
+                    fcs
             );
         } catch (Exception e) {
             prettyTelem.error("Storage system failed to initialize, skipping: " + e.getMessage());
@@ -310,6 +315,19 @@ public abstract class AutoOpBase extends OpModeCore {
                 );
                 fcs.setFallbackVelocity(targetVelocity);
                 fcs.setAllianceColor(allianceColor);
+            } else {
+                if(launcher == null) {
+                    prettyTelem.error("Launcher failed to initialize.");
+                }
+                if(limelight == null) {
+                    prettyTelem.error("Limelight failed to initialize.");
+                }
+                if(hood == null) {
+                    prettyTelem.error("Hood failed to initialize.");
+                }
+                if(turret == null) {
+                    prettyTelem.error("Turret failed to initialize.");
+                }
             }
         } catch (Exception e) {
             prettyTelem.error("Fire Control System failed to initialize, skipping: " + e.getMessage());
@@ -639,35 +657,6 @@ public abstract class AutoOpBase extends OpModeCore {
         return fcs.isTurretAligned() && fcs.isLauncherSpun();
     }
 
-    protected void queueLoadForPattern(SmartLimelight3A.AprilTag.Type type) {
-        if (storageController == null) {
-            throw new IllegalStateException("Storage controller unavailable");
-        }
-
-        SmartLimelight3A.AprilTag.Type selected = type != null ? type : DEFAULT_TAG_PATTERN;
-        switch (selected) {
-            case OBELISK_GPP:
-                storageController.loadGreen();
-                storageController.loadPurple();
-                storageController.loadPurple();
-                break;
-            case OBELISK_PGP:
-                storageController.loadPurple();
-                storageController.loadGreen();
-                storageController.loadPurple();
-                break;
-            case OBELISK_PPG:
-                storageController.loadPurple();
-                storageController.loadPurple();
-                storageController.loadGreen();
-                break;
-            default:
-                storageController.loadGreen();
-                storageController.loadPurple();
-                storageController.loadPurple();
-        }
-    }
-
     protected StepSpec queuePatternWhenFcsReadyStep(
             String name,
             Supplier<SmartLimelight3A.AprilTag.Type> patternSupplier,
@@ -688,9 +677,23 @@ public abstract class AutoOpBase extends OpModeCore {
                 SmartLimelight3A.AprilTag.Type pattern = patternSupplier != null
                         ? patternSupplier.get()
                         : DEFAULT_TAG_PATTERN;
-                pendingLoads = getPatternLoadOrder(pattern);
                 queuedCount = 0;
                 waitingForStorageIdle = false;
+
+                switch(pattern) {
+                    case OBELISK_GPP: {
+                        storageController.fireGPP();
+                    } break;
+                    case OBELISK_PGP: {
+                        storageController.firePGP();
+                    } break;
+                    case OBELISK_PPG: {
+                        storageController.firePPG();
+                    } break;
+                    default: {
+                        storageController.fireAny();
+                    }
+                }
             }
 
             @Override
@@ -699,71 +702,17 @@ public abstract class AutoOpBase extends OpModeCore {
                     return StepStatus.FAILED;
                 }
 
-                if (queuedCount >= pendingLoads.size()) {
-                    return waitingForStorageIdle && !storageController.allTasksComplete()
-                            ? StepStatus.RUNNING
-                            : StepStatus.COMPLETE;
-                }
-
-                if (waitingForStorageIdle) {
-                    if (storageController.allTasksComplete()) {
-                        waitingForStorageIdle = false;
-                    }
-                    return StepStatus.RUNNING;
-                }
-
-                if (!storageController.allTasksComplete()) {
-                    return StepStatus.RUNNING;
+                if(storageController.allTasksComplete()) {
+                    return StepStatus.COMPLETE;
                 }
 
                 if (!isFcsReady()) {
                     return StepStatus.RUNNING;
                 }
 
-                IndexerStorage.SlotContent next = pendingLoads.get(queuedCount);
-                if (next == IndexerStorage.SlotContent.GREEN) {
-                    storageController.loadGreen();
-                } else if (next == IndexerStorage.SlotContent.PURPLE) {
-                    storageController.loadPurple();
-                } else {
-                    return StepStatus.FAILED;
-                }
-
-                queuedCount++;
-                waitingForStorageIdle = true;
                 return StepStatus.RUNNING;
             }
         }, timeoutSec);
-    }
-
-    private List<IndexerStorage.SlotContent> getPatternLoadOrder(SmartLimelight3A.AprilTag.Type type) {
-        SmartLimelight3A.AprilTag.Type selected = type != null ? type : DEFAULT_TAG_PATTERN;
-        switch (selected) {
-            case OBELISK_GPP:
-                return List.of(
-                        IndexerStorage.SlotContent.GREEN,
-                        IndexerStorage.SlotContent.PURPLE,
-                        IndexerStorage.SlotContent.PURPLE
-                );
-            case OBELISK_PGP:
-                return List.of(
-                        IndexerStorage.SlotContent.PURPLE,
-                        IndexerStorage.SlotContent.GREEN,
-                        IndexerStorage.SlotContent.PURPLE
-                );
-            case OBELISK_PPG:
-                return List.of(
-                        IndexerStorage.SlotContent.PURPLE,
-                        IndexerStorage.SlotContent.PURPLE,
-                        IndexerStorage.SlotContent.GREEN
-                );
-            default:
-                return List.of(
-                        IndexerStorage.SlotContent.GREEN,
-                        IndexerStorage.SlotContent.PURPLE,
-                        IndexerStorage.SlotContent.PURPLE
-                );
-        }
     }
 
     protected StepSpec instantStep(String name, Runnable action) {

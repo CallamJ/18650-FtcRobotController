@@ -1,16 +1,20 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
 import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
-import org.firstinspires.ftc.teamcode.hardware.ScoringColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
+import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 
 import java.util.Arrays;
 
 @Configurable
 public class IndexerStorage {
-    public static int requiredConsecutiveContentReads = 3;
+    public static int requiredConsecutiveContentReads = 1;
+    public static double frontSensorMinDistance = 38;
+    public static double GREEN_HUE = 159.0;
+    public static double PURPLE_HUE = 170.0;
 
     public enum SlotContent {
         OPEN,
@@ -19,7 +23,7 @@ public class IndexerStorage {
     }
 
     private final Indexer indexer;
-    private final ScoringColorSensor frontSensor;
+    private final SmartColorSensor frontColorSensor;
     private final SmartLEDIndicator leftLED;
     private final SmartLEDIndicator rightLED;
     private final SmartLEDIndicator frontLED;
@@ -42,13 +46,13 @@ public class IndexerStorage {
 
     public IndexerStorage(
             Indexer indexer,
-            ScoringColorSensor frontSensor,
+            SmartColorSensor frontColorSensor,
             SmartLEDIndicator leftLED,
             SmartLEDIndicator rightLED,
             SmartLEDIndicator frontLED
     ) {
         this.indexer = indexer;
-        this.frontSensor = frontSensor;
+        this.frontColorSensor = frontColorSensor;
         this.leftLED = leftLED;
         this.rightLED = rightLED;
         this.frontLED = frontLED;
@@ -57,16 +61,26 @@ public class IndexerStorage {
     }
 
     private ScoringElementColor getFrontDetection() {
-        if (frontSensor.getClosestColorMatchName().equals("ARTIFACT_PURPLE")) {
+        if(!isFrontFull()) {
+            return ScoringElementColor.NONE;
+        }
+
+        if (getFrontClosestColorMatch().equals("ARTIFACT_PURPLE")) {
             return ScoringElementColor.PURPLE;
-        } else if (frontSensor.getClosestColorMatchName().equals("ARTIFACT_GREEN")) {
+        } else {
             return ScoringElementColor.GREEN;
         }
-        return ScoringElementColor.NONE;
     }
 
     public String getFrontClosestColorMatch() {
-        return frontSensor.getClosestColorMatchName();
+        double greenDist = Math.abs(getFrontSensorHue() - GREEN_HUE);
+        double purpleDist = Math.abs(getFrontSensorHue() - PURPLE_HUE);
+
+        if (greenDist < purpleDist) {
+            return "ARTIFACT_GREEN";
+        } else {
+            return "ARTIFACT_PURPLE";
+        }
     }
 
     public String getFrontSensorColorName() {
@@ -75,15 +89,15 @@ public class IndexerStorage {
     }
 
     public float getFrontSensorHue() {
-        return frontSensor.getHSV()[0];
+        return frontColorSensor.getHSV()[0];
     }
 
     public float getFrontSensorSaturation() {
-        return frontSensor.getHSV()[1];
+        return frontColorSensor.getHSV()[1];
     }
 
     public float getFrontSensorValue() {
-        return frontSensor.getHSV()[2];
+        return frontColorSensor.getHSV()[2];
     }
 
     public boolean isFrontFresh() {
@@ -98,6 +112,10 @@ public class IndexerStorage {
         applyContentColor(leftLED, getLeftContent());
         applyContentColor(rightLED, getRightContent());
         applyContentColor(frontLED, getFrontContent());
+    }
+
+    public boolean isFrontFull(){
+        return frontColorSensor.getDistance(DistanceUnit.MM) < frontSensorMinDistance;
     }
 
     public void updateIndexerContent() {

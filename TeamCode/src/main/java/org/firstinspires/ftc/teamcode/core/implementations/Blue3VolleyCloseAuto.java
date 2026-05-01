@@ -8,7 +8,6 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
-import org.firstinspires.ftc.teamcode.components.subsystems.SingleFireStorageManager;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.ArrayList;
@@ -66,9 +65,9 @@ public class Blue3VolleyCloseAuto extends AutoOpBase {
     @Override
     protected void onInitialize() {
         if (storageController != null) {
-            storageController.setLeftContent(IndexerStorage.SlotContent.PURPLE);
-            storageController.setRightContent(IndexerStorage.SlotContent.GREEN);
-            storageController.setFrontContent(IndexerStorage.SlotContent.PURPLE);
+            storageController.indexerStorage().setLeftContent(IndexerStorage.SlotContent.PURPLE);
+            storageController.indexerStorage().setRightContent(IndexerStorage.SlotContent.GREEN);
+            storageController.indexerStorage().setFrontContent(IndexerStorage.SlotContent.PURPLE);
         }
 
         Follower follower = driveBase != null ? driveBase.getFollower() : null;
@@ -342,7 +341,7 @@ public class Blue3VolleyCloseAuto extends AutoOpBase {
                 if (driveBase != null) {
                     driveBase.moveUsingPower(0, COLLECT_FORWARD_POWER, 0);
                 }
-                if (storageController != null && storageController.isFull()) {
+                if (storageController != null && storageController.indexerStorage().isFull()) {
                     return StepStatus.COMPLETE;
                 }
                 return timer.seconds() >= COLLECT_FORWARD_SECONDS ? StepStatus.COMPLETE : StepStatus.RUNNING;

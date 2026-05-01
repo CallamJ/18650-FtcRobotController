@@ -1,11 +1,14 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
+import com.bylazar.configurables.annotations.Configurable;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
 
+@Configurable
 public class VolleyFireStorageManager {
     private final FeedSystem feeder;
     private final Indexer indexer;
@@ -14,18 +17,36 @@ public class VolleyFireStorageManager {
     private Task activeTask;
     private State state;
     private long lastFireIndex = 0;
+    private final ElapsedTime firePrepareTimer = new ElapsedTime();
+    public static double FIRE_PREPARE_TIME_MS = 250;
+    public static double FIRE_END_TIME_MS = 350;
+    private final FireControlSystem fcs;
+
+    // jam correcting
+        public static boolean JAM_CORRECTING_ENABLED = true;
+        public static double JAM_CORRECTING_TIME_THRESHOLD = 300;
+        public static double JAM_CORRECTING_VELOCITY_THRESHOLD = 25;
+        public static double JAM_CORRECTING_TIME_MS = 1000;
+        private boolean isJamCorrecting = false;
+        private long lastTarget = 0;
+        private final ElapsedTime jamTimer = new ElapsedTime(), activeJamTimer = new ElapsedTime();;
+
+
 
     public VolleyFireStorageManager(
             FeedSystem feeder,
             Indexer indexer,
             Collector collector,
-            IndexerStorage indexerStorage
+            IndexerStorage indexerStorage,
+            FireControlSystem fcs
     ) {
+        assert fcs != null;
         this.feeder = feeder;
         this.indexer = indexer;
         this.indexerStorage = indexerStorage;
         this.taskQueue = new ArrayDeque<>();
         this.state = State.RESTING;
+        this.fcs = fcs;
     }
 
     public IndexerStorage indexerStorage() {
@@ -36,6 +57,16 @@ public class VolleyFireStorageManager {
         indexer.tick();
         indexerStorage.tick();
 
+        if(JAM_CORRECTING_ENABLED){
+            checkForIndexerJam();
+        }
+
+        if (isJamCorrecting && (!indexer.isBusy() || activeJamTimer.milliseconds() > JAM_CORRECTING_TIME_MS)) {
+            isJamCorrecting = false;
+            indexer.setTargetIndex(lastTarget);
+            return;
+        }
+
         switch (state){
             case RESTING: {
                 activeTask = null;
@@ -45,25 +76,42 @@ public class VolleyFireStorageManager {
                     indexerStorage.updateIndexerContent();
                 }
 
-                if(taskQueue.isEmpty() && activeTask == null && indexerStorage.isFrontFresh()){
+                if(
+                        taskQueue.isEmpty()
+                        && activeTask == null
+                        && indexerStorage.isFrontFresh()
+                        && indexerStorage.isFrontFull()
+                        && !indexerStorage.isFull()
+                ){
                     readyForCollection();
                 }
             } break;
 
             case BUMPING: {
+                feeder.stopFeeding();
                 if (!indexer.isBusy()) {
                     state = State.RESTING;
                     indexerStorage.dropFreshFlag();
                 }
             } break;
 
-            case PREPARING_TO_FIRE:{
+            case PREPARING_TO_FIRE: {
                 if (!indexer.isBusy()) {
-                    state = State.FIRING;
+                    state = State.ENGAGING_FEEDER;
                     indexerStorage.dropFreshFlag();
                     feeder.startFeeding();
+                    firePrepareTimer.reset();
+
+                }
+            } break;
+
+            case ENGAGING_FEEDER: {
+                if(firePrepareTimer.milliseconds() > FIRE_PREPARE_TIME_MS){
+                    indexerStorage.dropFreshFlag();
+                    state = State.FIRING;
                     lastFireIndex = indexer.getCurrentIndex();
                     indexer.advanceIndexCounterclockwiseWithPower(4, 1);
+                    fcs.setFiring(true);
                 }
             } break;
 
@@ -73,12 +121,35 @@ public class VolleyFireStorageManager {
                 }
 
                 if(!indexer.isRunningPoweredMove()){
-                    feeder.stopFeeding();
-                    state = State.RESTING;
+                    firePrepareTimer.reset();
+                    state = State.ENDING_FIRING;
                 }
 
                 lastFireIndex = indexer.getCurrentIndex();
             } break;
+
+            case ENDING_FIRING: {
+                if(firePrepareTimer.milliseconds() > FIRE_END_TIME_MS){
+                    state = State.RESTING;
+                    feeder.stopFeeding();
+                    fcs.setFiring(false);
+                }
+            } break;
+        }
+    }
+
+    private void checkForIndexerJam() {
+        if (indexer.isBusy() && Math.abs(indexer.getVelocity()) <= JAM_CORRECTING_VELOCITY_THRESHOLD && !isJamCorrecting) {
+            if (jamTimer.milliseconds() > JAM_CORRECTING_TIME_THRESHOLD) {
+                jamTimer.reset();
+                activeJamTimer.reset();
+                lastTarget = indexer.getTargetIndex();
+                long lastCurrent = indexer.getCurrentIndex();
+                indexer.setTargetIndex(lastCurrent);
+                isJamCorrecting = true;
+            }
+        } else {
+            jamTimer.reset();
         }
     }
 
@@ -115,7 +186,8 @@ public class VolleyFireStorageManager {
 
             case FIRE_PPG: {
                 if (indexerStorage.isEmpty()) {
-                    break;
+                    activeTask = null;
+                    checkTasks();
                 }
 
                 if(indexerStorage.hasPurple() && indexerStorage.hasGreen() && indexerStorage.isFull()) {
@@ -127,6 +199,11 @@ public class VolleyFireStorageManager {
             } break;
 
             case FIRE_PGP: {
+                if (indexerStorage.isEmpty()) {
+                    activeTask = null;
+                    checkTasks();
+                }
+
                 if(indexerStorage.hasPurple() && indexerStorage.hasGreen() && indexerStorage.isFull()) {
                     indexerStorage.readyContentToFront(IndexerStorage.SlotContent.GREEN);
                 } else {
@@ -136,11 +213,21 @@ public class VolleyFireStorageManager {
             } break;
 
             case FIRE_GPP: {
+                if (indexerStorage.isEmpty()) {
+                    activeTask = null;
+                    checkTasks();
+                }
+
                 indexerStorage.readyContentToLeft(IndexerStorage.SlotContent.GREEN);
                 state = State.PREPARING_TO_FIRE;
             } break;
 
             case FIRE_ANY: {
+                if (indexerStorage.isEmpty()) {
+                    activeTask = null;
+                    checkTasks();
+                }
+
                 state = State.PREPARING_TO_FIRE;
             } break;
         }
@@ -179,19 +266,47 @@ public class VolleyFireStorageManager {
     }
 
     public void firePPG() {
-        taskQueue.add(Task.FIRE_PPG);
+        if(
+                !(taskQueue.contains(Task.FIRE_PPG) ||
+                taskQueue.contains(Task.FIRE_PGP) ||
+                taskQueue.contains(Task.FIRE_GPP) ||
+                taskQueue.contains(Task.FIRE_ANY)
+        )) {
+            taskQueue.add(Task.FIRE_PPG);
+        }
     }
 
     public void firePGP() {
-        taskQueue.add(Task.FIRE_PGP);
+        if(
+                !(taskQueue.contains(Task.FIRE_PPG) ||
+                        taskQueue.contains(Task.FIRE_PGP) ||
+                        taskQueue.contains(Task.FIRE_GPP) ||
+                        taskQueue.contains(Task.FIRE_ANY)
+                )) {
+            taskQueue.add(Task.FIRE_PGP);
+        }
     }
 
     public void fireGPP() {
-        taskQueue.add(Task.FIRE_GPP);
+        if(
+                !(taskQueue.contains(Task.FIRE_PPG) ||
+                        taskQueue.contains(Task.FIRE_PGP) ||
+                        taskQueue.contains(Task.FIRE_GPP) ||
+                        taskQueue.contains(Task.FIRE_ANY)
+        )) {
+            taskQueue.add(Task.FIRE_GPP);
+        }
     }
 
     public void fireAny() {
-        taskQueue.add(Task.FIRE_ANY);
+        if(
+                !(taskQueue.contains(Task.FIRE_PPG) ||
+                        taskQueue.contains(Task.FIRE_PGP) ||
+                        taskQueue.contains(Task.FIRE_GPP) ||
+                        taskQueue.contains(Task.FIRE_ANY)
+        )) {
+            taskQueue.add(Task.FIRE_ANY);
+        }
     }
 
     public void dropFreshFlag() {
@@ -215,6 +330,8 @@ public class VolleyFireStorageManager {
         RESTING,
         BUMPING,
         PREPARING_TO_FIRE,
-        FIRING
+        ENGAGING_FEEDER,
+        FIRING,
+        ENDING_FIRING
     }
 }

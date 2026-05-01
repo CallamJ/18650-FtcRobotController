@@ -34,9 +34,9 @@ public class Red1VolleyFarAuto extends AutoOpBase {
     @Override
     protected void onInitialize() {
         if (storageController != null) {
-            storageController.setLeftContent(IndexerStorage.SlotContent.PURPLE);
-            storageController.setRightContent(IndexerStorage.SlotContent.GREEN);
-            storageController.setFrontContent(IndexerStorage.SlotContent.PURPLE);
+            storageController.indexerStorage().setLeftContent(IndexerStorage.SlotContent.PURPLE);
+            storageController.indexerStorage().setRightContent(IndexerStorage.SlotContent.GREEN);
+            storageController.indexerStorage().setFrontContent(IndexerStorage.SlotContent.PURPLE);
         }
         if (driveBase != null && driveBase.getFollower() != null) {
             driveBase.getFollower().setStartingPose(startPose());

@@ -12,8 +12,8 @@ public class Turret extends MotorPositionAxisComponent {
     private final SmartEncoder encoder;
     public static double kP = 0.02, kI = 0, kD = 0.015, kF = 0, tolerance = 1;
     public static float ticksPerDegree = (8192f / 360f) * (88f / 20f);
-    public static double minAngle = -720;
-    public static double maxAngle = 720;
+    public static double minAngle = -90;
+    public static double maxAngle = 90;
     private double desiredTarget;
 
     public Turret(SmartMotor motor, SmartEncoder encoder) {

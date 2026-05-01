@@ -21,14 +21,22 @@ public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13.35);
 
-    public static PinpointConstants pinpointConstants = new PinpointConstants()
-            .hardwareMapName("pinpoint")
-            .distanceUnit(DistanceUnit.INCH)
-            .strafePodX(-6.75)
-            .forwardPodY(4.5)
-            .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
-            .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+    public static double STRAFE_POD_X_INCHES = 0.9;
+    public static double FORWARD_POD_Y_INCHES = -3.25;
+    public static GoBildaPinpointDriver.EncoderDirection FORWARD_ENCODER_DIRECTION = GoBildaPinpointDriver.EncoderDirection.FORWARD;
+    public static GoBildaPinpointDriver.EncoderDirection STRAFE_ENCODER_DIRECTION = GoBildaPinpointDriver.EncoderDirection.REVERSED;
+
+
+    public static PinpointConstants createPinpointConstants() {
+        return new PinpointConstants()
+                .hardwareMapName("pinpoint")
+                .distanceUnit(DistanceUnit.INCH)
+                .strafePodX(STRAFE_POD_X_INCHES)
+                .forwardPodY(FORWARD_POD_Y_INCHES)
+                .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
+                .forwardEncoderDirection(FORWARD_ENCODER_DIRECTION)
+                .strafeEncoderDirection(STRAFE_ENCODER_DIRECTION);
+    }
 
     public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
@@ -49,7 +57,7 @@ public class Constants {
     }
 
     public static Follower createFollower(HardwareMap hardwareMap) {
-        PinpointLocalizer localizer = new PinpointLocalizer(hardwareMap, pinpointConstants);
+        PinpointLocalizer localizer = new PinpointLocalizer(hardwareMap, createPinpointConstants());
         return new Follower(
                 followerConstants,
                 localizer,
@@ -64,7 +72,7 @@ public class Constants {
         config.configAndFetchRightRear(hardwareMap);
         return new Follower(
                 followerConstants,
-                new PinpointLocalizer(hardwareMap, pinpointConstants),
+                new PinpointLocalizer(hardwareMap, createPinpointConstants()),
                 new Mecanum(hardwareMap, mecanumConstants)
         );
     }

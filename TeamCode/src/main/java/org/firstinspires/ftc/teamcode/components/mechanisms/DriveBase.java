@@ -53,7 +53,7 @@ public class DriveBase {
 
             localizer.update();
         } else {
-            localizer = new PinpointLocalizer(hardwareMap, Constants.pinpointConstants);
+            localizer = new PinpointLocalizer(hardwareMap, Constants.createPinpointConstants());
             drivetrain = new Mecanum(hardwareMap, Constants.mecanumConstants);
 
             config.configAndFetchLeftFront(hardwareMap);

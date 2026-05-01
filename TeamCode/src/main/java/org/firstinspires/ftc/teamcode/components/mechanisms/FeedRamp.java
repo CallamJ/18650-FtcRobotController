@@ -12,10 +12,8 @@ public class FeedRamp {
     public static double min = 0;
     public static double max = 1;
 
-    public static double engagedPosition = 0;
+    public static double engagedPosition = 0.32;
     public static double disengagedPosition = 1;
-
-
 
     public FeedRamp(SmartServo leftServo, SmartServo rightServo) {
         leftFeedServo = leftServo;

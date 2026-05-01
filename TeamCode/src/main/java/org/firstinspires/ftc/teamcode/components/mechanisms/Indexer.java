@@ -9,7 +9,7 @@ import org.firstinspires.ftc.teamcode.utilities.Direction;
 @Configurable
 public class Indexer extends MotorPositionAxisComponent {
 
-    public static double kP = 0.007, kI = 0, kD = 0.0075, kF = 0.0001, tolerance = 1, busyTolerance = 2.5;
+    public static double kP = 0.007, kI = 0, kD = 0.0075, kF = 0.000005, tolerance = 1, busyTolerance = 2.5;
     public static double poweredMovePower = 1;
     public static float ticksPerDegree = 8192f/360f;
 

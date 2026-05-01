@@ -5,6 +5,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.components.subsystems.FeedSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
 import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
@@ -19,13 +20,13 @@ import org.firstinspires.ftc.teamcode.core.teleoptasks.tasks.FarFiringTask;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
+import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
-import org.firstinspires.ftc.teamcode.utilities.Pose;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +55,12 @@ public class MainTeleOp extends TeleOpCore {
     protected static IndexerStorage indexerStorage;
     protected static VolleyFireStorageManager volleyStorageManager;
     protected static SmartCameraColorSensor frontCameraSensor;
+    protected static SmartColorSensor frontColorSensor;
     protected static Hood hood;
     protected static FireControlSystem fcs;
     protected static SmartLimelight3A limelight;
     protected static Limelight3A limelight3A;
+    protected static LimelightLocalizer limelightLocalizer;
     protected ElapsedTime tickTimer = new ElapsedTime();
     protected DataFilter tickTimeFilter = new RollingAverage(10);
 
@@ -80,7 +83,7 @@ public class MainTeleOp extends TeleOpCore {
     public static double obeliskFieldXIn = 73.0;
     public static double obeliskFieldYIn = 0.0;
     public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
-    public static double turretZeroBumpTicksPerTriggerUnit = -75.0;
+    public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
     public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
     public static double maintenancePoseTrimInchesPerTouchpadUnit = 12.0;
     public static double closeAutoStartBluePoseXIn = 54.7;
@@ -186,36 +189,18 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         try {
-            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
-            collector = new Collector(hardware.getMotor("collectorMotor"));
-            frontCameraSensor = hardware
-                    .getCamera("colorCamera", new Pose(0, 0, 0))
-                    .asColorSensor();
-            indexerStorage = new IndexerStorage(
-                    indexer,
-                    frontCameraSensor,
-                    hardware.getLEDIndicator("leftLED"),
-                    hardware.getLEDIndicator("rightLED"),
-                    hardware.getLEDIndicator("frontLED")
-            );
-            volleyStorageManager = new VolleyFireStorageManager(
-                    feeder,
-                    indexer,
-                    collector,
-                    indexerStorage
-            );
-            applyPersistedStorageStateIfAvailable();
-        } catch (Exception e) {
-            prettyTelem.error("Storage failed to initialize, skipping: " + e.getMessage());
-        }
-
-        try {
             launcher = new Launcher(hardware, hardware.getMotor("launcherMotor"));
             hood = new Hood(hardware.getServo("hoodServo"));
             turret = new Turret(hardware.getMotor("turretMotor"), hardware.getMotor("turretMotor").getEncoder());
             limelight = hardware.getLimelight("limelight");
             limelight.setPipeline(0);
             limelight.start();
+
+            prettyTelem.addLine("lime light")
+                    .addData("limelight results", limelight::getAprilTags);
+//            if(limelight != null){
+//                limelightLocalizer = new LimelightLocalizer(limelight);
+//            }
 
             fcs = new FireControlSystem(
                     turret,
@@ -230,6 +215,36 @@ public class MainTeleOp extends TeleOpCore {
             fcs.setAllianceColor(allianceColor);
         } catch (Exception e) {
             prettyTelem.error("Fire Control System failed to initialize, skipping: " + e.getMessage());
+        }
+
+        try {
+            indexer = new Indexer(hardware.getMotor("indexerMotor", true));
+            collector = new Collector(hardware.getMotor("collectorMotor"));
+            frontColorSensor = hardware.getColorSensor("frontColorSensor");
+            if(frontColorSensor != null) {
+                if(!frontColorSensor.hasDistanceSensing()){
+                    prettyTelem.error("Front color sensor must have distance sensing, but does not.");
+                }
+            } else {
+                prettyTelem.error("Color sensor failed to initialize.");
+            }
+            indexerStorage = new IndexerStorage(
+                    indexer,
+                    frontColorSensor,
+                    hardware.getLEDIndicator("leftLED"),
+                    hardware.getLEDIndicator("rightLED"),
+                    hardware.getLEDIndicator("frontLED")
+            );
+            volleyStorageManager = new VolleyFireStorageManager(
+                    feeder,
+                    indexer,
+                    collector,
+                    indexerStorage,
+                    fcs
+            );
+            applyPersistedStorageStateIfAvailable();
+        } catch (Exception e) {
+            prettyTelem.error("Storage failed to initialize, skipping: " + e.getMessage());
         }
 
         teleOpTaskManager = new TeleOpTaskManager(
@@ -262,7 +277,11 @@ public class MainTeleOp extends TeleOpCore {
             resetPoseToCloseAutoStart();
         }
         if (gamepad2.bPressed()) {
-            resetTurretZeroToCurrent();
+            allianceColor = allianceColor.opposite();
+            if (fcs != null) {
+                fcs.setAllianceColor(allianceColor);
+            }
+            persistMatchStateIfDue(true);
         }
         turretTrimActive |= applyZeroTrim(gamepad2);
 
@@ -320,10 +339,12 @@ public class MainTeleOp extends TeleOpCore {
 
         if(volleyStorageManager != null){
             if(gamepad1.leftBumperPressed()){
+                feeder.stopFeeding();
                 indexer.advanceIndexCounterclockwise();
                 volleyStorageManager.dropFreshFlag();
             }
             if(gamepad1.rightBumperPressed()){
+                feeder.stopFeeding();
                 indexer.advanceIndexClockwise();
                 volleyStorageManager.dropFreshFlag();
             }
@@ -409,6 +430,15 @@ public class MainTeleOp extends TeleOpCore {
             volleyStorageManager.tick();
         }
 
+//        if(limelightLocalizer != null){
+//            if(limelightLocalizer.hasDetection()){
+//                Pose latestPose = limelightLocalizer.getLatestPose();
+//                driveBase.getFollower().poseTracker.setPose(
+//                        new com.pedropathing.geometry.Pose(latestPose.x(), latestPose.y(), Math.toRadians(latestPose.heading()))
+//                );
+//            }
+//        }
+
         if(fcs != null && runFCS){
             try {
                 fcs.tick();
@@ -485,64 +515,12 @@ public class MainTeleOp extends TeleOpCore {
         registerDebugTelemetry();
     }
 
-    private void registerDistilledTelemetry() {
-        prettyTelem.addLine("HUD")
-                .addData("Mode", () -> telemetryMode.name())
-                .addData("Alliance", () -> allianceColor.name())
-                .addData("Task", () -> teleOpTaskManager == null ? "NONE" : teleOpTaskManager.activeTaskState());
-        prettyTelem.addLine("Pose")
-                .addData("X", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().x())
-                .addData("Y", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().y())
-                .addData("Hdg", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().heading());
-        prettyTelem.addLine("FCS")
-                .addData("Running", () -> fcs != null && fcs.isLauncherRunning())
-                .addData("Launcher Spun", () -> fcs != null && fcs.isLauncherSpun())
-                .addData("Turret Aligned", () -> fcs != null && fcs.isTurretAligned());
-        prettyTelem.addLine("Storage")
-                .addData("G/P/O", () -> indexerStorage == null
-                        ? "n/a"
-                        : indexerStorage.countGreen() + "/" + indexerStorage.countPurple() + "/" + indexerStorage.countOpen())
-                .addData("Full", () -> indexerStorage != null && indexerStorage.isFull())
-                .addData("Busy", () -> volleyStorageManager != null && !volleyStorageManager.allTasksComplete());
-        prettyTelem.addLine("Relocalize")
-                .addData("Status", () -> obeliskRelocalizeStatus);
-        prettyTelem.addLine("Controls")
-                .addData("G1 LSB+Start", () -> "Reset pose close auto")
-                .addData("G1 LSB+B", () -> "Set turret current=zero")
-                .addData("G1 LSB+RT/LT", () -> "Indexer zero trim")
-                .addData("G1 LSB+LB+RT/LT", () -> "Turret zero trim + target zero")
-                .addData("G2 Start/B", () -> "Reset pose / turret current=zero")
-                .addData("G2 RT/LT", () -> "Indexer zero trim")
-                .addData("G2 LB+RT/LT", () -> "Turret zero trim + target zero");
-    }
-
     private void registerDebugTelemetry() {
         prettyTelem.addData("Tick Time", () -> tickTimeFilter.compute(tickTimer.milliseconds()));
 
         prettyTelem.addLine("Match")
-                .addData("Telemetry Mode", () -> telemetryMode.name())
                 .addData("Alliance", () -> allianceColor.name())
                 .addData("Loaded Fresh Snapshot", () -> loadedFreshSnapshot);
-        prettyTelem.addLine("TeleOp Task")
-                .addData("Task Active", () -> teleOpTaskManager != null && teleOpTaskManager.hasActiveTask())
-                .addData("Task Name", () -> teleOpTaskManager == null ? "NONE" : teleOpTaskManager.activeTaskName())
-                .addData("Task State", () -> teleOpTaskManager == null ? "IDLE" : teleOpTaskManager.activeTaskState())
-                .addData("Last Exit", () -> teleOpTaskManager == null ? "NONE" : teleOpTaskManager.lastExitReason());
-        prettyTelem.addLine("Obelisk Relocalize")
-                .addData("State", () -> obeliskRelocalizeState.name())
-                .addData("Status", () -> obeliskRelocalizeStatus)
-                .addData("Solved X", () -> lastSolvedObeliskPoseXIn)
-                .addData("Solved Y", () -> lastSolvedObeliskPoseYIn)
-                .addData("Tag Cam X(in)", () -> lastSeenObeliskCamXIn)
-                .addData("Tag Cam Z(in)", () -> lastSeenObeliskCamZIn);
-        prettyTelem.addLine("Controls")
-                .addData("G1 LSB+Start", () -> "Reset pose to close auto start")
-                .addData("G1 LSB+B", () -> "Set turret current angle as zero")
-                .addData("G1 LSB+RT/LT", () -> "Indexer zero trim")
-                .addData("G1 LSB+LB+RT/LT", () -> "Turret zero trim + target zero")
-                .addData("G2 Start/B", () -> "Reset pose / turret current=zero")
-                .addData("G2 RT/LT", () -> "Indexer zero trim")
-                .addData("G2 LB+RT/LT", () -> "Turret zero trim + target zero");
 
         prettyTelem.addLine("Localization")
                 .addData("X", () -> driveBase == null ? "n/a" : driveBase.getPoseSimple().x())
@@ -576,11 +554,15 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Active Task", () -> volleyStorageManager == null ? "None" : volleyStorageManager.getActiveTaskName())
                 .addData("Task Queue", () -> volleyStorageManager == null ? "[]" : volleyStorageManager.getTaskQueueSummary());
         prettyTelem.addLine("Color Sensor")
-                .addData("Sensor Color", () -> indexerStorage == null ? "NONE" : indexerStorage.getFrontSensorColorName())
                 .addData("Closest Match", () -> indexerStorage == null ? "N/A" : indexerStorage.getFrontClosestColorMatch())
                 .addData("Front Sensor Hue", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorHue())
-                .addData("Front Sensor Saturation", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorSaturation())
-                .addData("Front Sensor Value", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorValue());
+                .addData("Front Sensor Distance", () -> frontColorSensor == null ? "n/a" : frontColorSensor.getDistance(DistanceUnit.MM));
+//        prettyTelem.addLine("LL3ALocalizer")
+//                .addData("Has Detection?", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::hasDetection)
+//                .addData("Latest Pose", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLatestPose)
+//                .addData("Solve Status", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLastSolveStatus)
+//                .addData("Last Rel Pose", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLastTagRelPose)
+//        ;
     }
 
 //    private void processObeliskRelocalization() {

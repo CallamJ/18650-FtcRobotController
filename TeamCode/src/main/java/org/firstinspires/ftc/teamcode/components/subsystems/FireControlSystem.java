@@ -13,7 +13,7 @@ import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
 public class FireControlSystem {
-    public static double baseVelocity = 1400, kVDist = 390;
+    public static double baseVelocity = 2700, kVDist = 620, minVelocity = 2900;
     public static double hoodBasePos = 0.53, kHoodDist = 0.1;
     public static boolean useDepotPoseFallbackWhenTagNotVisible = true;
     public static double alignedButLauncherOffHueDeg = 145.0;
@@ -33,8 +33,9 @@ public class FireControlSystem {
     private State state;
     private boolean runLauncher = false;
     private double fallbackVelocity = 1500;
-    public static double maxVelocity = 2600;
+    public static double maxVelocity = 5000;
     public static double bearingToDepot = 0;
+    private boolean firing = false;
 
 
     public FireControlSystem(Turret turret, Hood hood, Launcher launcher, SmartLimelight3A limelight, SmartLEDIndicator led) {
@@ -69,7 +70,7 @@ public class FireControlSystem {
 
         boolean turretAligned = isTurretAligned();
         boolean launcherSpun = isLauncherSpun();
-        boolean seesAnyAprilTag = !limelight.getAprilTags().isEmpty();
+        boolean seesAnyDepotTag = limelight.getAprilTags().stream().anyMatch(tag -> !tag.isObelisk());
         if (turretAligned && launcherSpun) {
             setState(State.READY);
         } else {
@@ -105,7 +106,9 @@ public class FireControlSystem {
         if (led != null) {
             if (ledOverrideColor != null) {
                 led.setColor(ledOverrideColor);
-            } else if (!runLauncher && turretAligned && seesAnyAprilTag) {
+            } else if (firing) {
+                led.setPulseWidthMicros(1350);
+            } else if (!runLauncher && turretAligned) {
                 led.setHue(alignedButLauncherOffHueDeg);
             } else if(state != null) {
                 led.setColor(state.color);
@@ -153,6 +156,11 @@ public class FireControlSystem {
 
     public void setDriveBase(DriveBase driveBase) {
         this.driveBase = driveBase;
+    }
+
+    public void setFiring(boolean firing) {
+        launcher.setRunMaxPower(firing);
+        this.firing = firing;
     }
 
     public void setAllianceColor(MatchStateStore.AllianceColor allianceColor) {

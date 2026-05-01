@@ -23,12 +23,7 @@ public class SmartCameraColorSensor extends Device implements AutoCloseable, Sco
 
     private static final PredominantColorProcessor.Swatch[] DEFAULT_SWATCHES = {
             PredominantColorProcessor.Swatch.ARTIFACT_GREEN,
-            PredominantColorProcessor.Swatch.ARTIFACT_PURPLE,
-            PredominantColorProcessor.Swatch.RED,
-            PredominantColorProcessor.Swatch.BLUE,
-            PredominantColorProcessor.Swatch.YELLOW,
-            PredominantColorProcessor.Swatch.BLACK,
-            PredominantColorProcessor.Swatch.WHITE
+            PredominantColorProcessor.Swatch.ARTIFACT_PURPLE
     };
     public static ImageRegion DEFAULT_ROI = ImageRegion.asUnityCenterCoordinates(-0.6, 0.6, 0.6, -0.6);
 
