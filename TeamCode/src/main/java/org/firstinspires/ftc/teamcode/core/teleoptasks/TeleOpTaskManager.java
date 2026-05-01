@@ -1,6 +1,24 @@
 package org.firstinspires.ftc.teamcode.core.teleoptasks;
 
+import com.bylazar.configurables.annotations.Configurable;
+import org.firstinspires.ftc.teamcode.core.teleoptasks.tasks.FarFiringTask;
+
+@Configurable
 public class TeleOpTaskManager {
+    public static double farFiringTaskBaseBlueXIn = -55.5;
+    public static double farFiringTaskBaseBlueYIn = -48;
+    public static double farFiringTaskBaseBlueHeadingDeg = -105;
+    public static double farFiringTaskBaseRedXIn = -55.5;
+    public static double farFiringTaskBaseRedYIn = 48;
+    public static double farFiringTaskBaseRedHeadingDeg = 105;
+    public static double farFiringTaskDriveToBaseTimeoutSec = 4.0;
+    public static double farFiringTaskWaitForFullTimeoutSec = 10.0;
+    public static double farFiringTaskReturnTimeoutSec = 4.0;
+    public static double farFiringTaskReadyToFireTimeoutSec = 4.0;
+    public static double farFiringTaskStorageDrainTimeoutSec = 10.0;
+    public static double farFiringTaskRepeatDelaySec = 0.5;
+    public static double driverOverrideDeadband = 0.08;
+
     private final TeleOpTaskContext context;
     private TeleOpTask activeTask;
     private String lastExitReason = "NONE";
@@ -23,6 +41,23 @@ public class TeleOpTaskManager {
             context.warn("Task start rejected: " + e.getMessage());
             return false;
         }
+    }
+
+    public boolean startFarFiringTask() {
+        return start(new FarFiringTask(
+                farFiringTaskBaseBlueXIn,
+                farFiringTaskBaseBlueYIn,
+                farFiringTaskBaseBlueHeadingDeg,
+                farFiringTaskBaseRedXIn,
+                farFiringTaskBaseRedYIn,
+                farFiringTaskBaseRedHeadingDeg,
+                farFiringTaskDriveToBaseTimeoutSec,
+                farFiringTaskWaitForFullTimeoutSec,
+                farFiringTaskReturnTimeoutSec,
+                farFiringTaskReadyToFireTimeoutSec,
+                farFiringTaskStorageDrainTimeoutSec,
+                farFiringTaskRepeatDelaySec
+        ));
     }
 
     public void update() {

@@ -16,7 +16,6 @@ import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.CancelReason;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TeleOpTaskContext;
 import org.firstinspires.ftc.teamcode.core.teleoptasks.TeleOpTaskManager;
-import org.firstinspires.ftc.teamcode.core.teleoptasks.tasks.FarFiringTask;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
@@ -27,8 +26,6 @@ import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Configurable
 @TeleOp(name = "1 - Main TeleOp")
@@ -49,7 +46,6 @@ public class MainTeleOp extends TeleOpCore {
     protected static FireControlSystem fcs;
     protected static SmartLimelight3A limelight;
     protected static Limelight3A limelight3A;
-    protected static LimelightLocalizer limelightLocalizer;
     protected ElapsedTime tickTimer = new ElapsedTime();
     protected DataFilter tickTimeFilter = new RollingAverage(10);
 
@@ -60,36 +56,15 @@ public class MainTeleOp extends TeleOpCore {
     public static double matchStateSaveIntervalMs = 500;
     public static double teleOpFollowerMaxPower = 1.0;
     public static MatchStateStore.AllianceColor defaultAllianceColor = MatchStateStore.AllianceColor.BLUE;
-    public static double taskBaseBlueXIn = -55.5, taskBaseBlueYIn = -48, taskBaseBlueHeadingDeg = -105;
-    public static double taskBaseRedXIn = -55.5, taskBaseRedYIn = 48, taskBaseRedHeadingDeg = 105;
-    public static double taskDriveToBaseTimeoutSec = 4.0;
-    public static double taskWaitForFullTimeoutSec = 10.0;
-    public static double taskReturnTimeoutSec = 4.0;
-    public static double taskReadyToFireTimeoutSec = 4.0;
-    public static double taskStorageDrainTimeoutSec = 10.0;
-    public static double taskRepeatDelaySec = 0.5;
-    public static double taskInterruptDeadband = 0.08;
-    public static double obeliskFieldXIn = 73.0;
-    public static double obeliskFieldYIn = 0.0;
     public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
     public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
     public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
     public static double maintenancePoseTrimInchesPerTouchpadUnit = 12.0;
-    public static double closeAutoStartBluePoseXIn = 54.7;
-    public static double closeAutoStartBluePoseYIn = 50.8;
-    public static double closeAutoStartBluePoseHeadingDeg = -127.483;
-    public static double closeAutoStartRedPoseXIn = 54.7;
-    public static double closeAutoStartRedPoseYIn = -50.8;
-    public static double closeAutoStartRedPoseHeadingDeg = 127.483;
     private MatchStateStore.AllianceColor allianceColor = defaultAllianceColor;
     private MatchStateStore.Snapshot startupSnapshot;
     private boolean loadedFreshSnapshot = false;
     private long lastMatchStateSaveMs = 0;
     private TeleOpTaskManager teleOpTaskManager;
-    public static double lastSolvedObeliskPoseXIn = 0;
-    public static double lastSolvedObeliskPoseYIn = 0;
-    public static double lastSeenObeliskCamXIn = 0;
-    public static double lastSeenObeliskCamZIn = 0;
     public static boolean clearLeftSlotWhenFeederReturns = false;
 
     private static void resetSubsystemReferences() {
@@ -173,9 +148,6 @@ public class MainTeleOp extends TeleOpCore {
 
             prettyTelem.addLine("lime light")
                     .addData("limelight results", limelight::getAprilTags);
-//            if(limelight != null){
-//                limelightLocalizer = new LimelightLocalizer(limelight);
-//            }
 
             fcs = new FireControlSystem(
                     turret,
@@ -236,15 +208,14 @@ public class MainTeleOp extends TeleOpCore {
         rebuildTelemetryLayout();
     }
 
-    boolean runFeeders = false;
     @Override
     protected void checkGamepads(SmartGamepad gamepad1, SmartGamepad gamepad2) {
         double driveX = -gamepad1.leftStickX;
         double driveY = -gamepad1.leftStickY;
         double driveTurn = -gamepad1.rightStickX;
-        boolean hasDriverOverrideInput = Math.abs(driveX) > taskInterruptDeadband
-                || Math.abs(driveY) > taskInterruptDeadband
-                || Math.abs(driveTurn) > taskInterruptDeadband;
+        boolean hasDriverOverrideInput = Math.abs(driveX) > TeleOpTaskManager.driverOverrideDeadband
+                || Math.abs(driveY) > TeleOpTaskManager.driverOverrideDeadband
+                || Math.abs(driveTurn) > TeleOpTaskManager.driverOverrideDeadband;
 
         boolean turretTrimActive = false;
 
@@ -252,21 +223,20 @@ public class MainTeleOp extends TeleOpCore {
             resetPoseToCloseAutoStart();
         }
         if (gamepad2.bPressed()) {
-            allianceColor = allianceColor.opposite();
-            if (fcs != null) {
-                fcs.setAllianceColor(allianceColor);
-            }
-            persistMatchStateIfDue(true);
+            toggleAllianceColor();
         }
         turretTrimActive |= applyZeroTrim(gamepad2);
 
-        boolean maintenanceMode = gamepad1.leftStickButton;
+        boolean maintenanceMode = gamepad1.share;
         if (maintenanceMode) {
             if (gamepad1.startPressed()) {
                 resetPoseToCloseAutoStart();
             }
 
             if (gamepad1.bPressed()) {
+                toggleAllianceColor();
+            }
+            if (gamepad1.leftStickButtonPressed()) {
                 resetTurretZeroToCurrent();
             }
             turretTrimActive |= applyZeroTrim(gamepad1);
@@ -285,20 +255,7 @@ public class MainTeleOp extends TeleOpCore {
                     teleOpTaskManager.cancelActive(CancelReason.DRIVER_STICK_OVERRIDE);
                 }
             } else if (gamepad1.guidePressed()) {
-                teleOpTaskManager.start(new FarFiringTask(
-                        taskBaseBlueXIn,
-                        taskBaseBlueYIn,
-                        taskBaseBlueHeadingDeg,
-                        taskBaseRedXIn,
-                        taskBaseRedYIn,
-                        taskBaseRedHeadingDeg,
-                        taskDriveToBaseTimeoutSec,
-                        taskWaitForFullTimeoutSec,
-                        taskReturnTimeoutSec,
-                        taskReadyToFireTimeoutSec,
-                        taskStorageDrainTimeoutSec,
-                        taskRepeatDelaySec
-                ));
+                teleOpTaskManager.startFarFiringTask();
             }
         }
 
@@ -349,14 +306,6 @@ public class MainTeleOp extends TeleOpCore {
                 indexerStorage.setFrontContent(IndexerStorage.SlotContent.OPEN);
             }
         }
-        if (gamepad1.sharePressed()) {
-            allianceColor = allianceColor.opposite();
-            if (fcs != null) {
-                fcs.setAllianceColor(allianceColor);
-            }
-            persistMatchStateIfDue(true);
-        }
-
         if(fcs != null){
             if(gamepad1.xPressed()){
                 fcs.toggleLauncher();
@@ -392,6 +341,14 @@ public class MainTeleOp extends TeleOpCore {
                 }
             }
         }
+    }
+
+    private void toggleAllianceColor() {
+        allianceColor = allianceColor.opposite();
+        if (fcs != null) {
+            fcs.setAllianceColor(allianceColor);
+        }
+        persistMatchStateIfDue(true);
     }
 
     @Override
@@ -524,26 +481,13 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Front Sensor Distance", () -> frontColorSensor == null ? "n/a" : frontColorSensor.getDistance(DistanceUnit.MM));
     }
 
-    private static double metersToInches(double meters) {
-        return meters * 39.37007874015748;
-    }
-
-    private static double rotateX(double x, double y, double angleRad) {
-        return x * Math.cos(angleRad) - y * Math.sin(angleRad);
-    }
-
-    private static double rotateY(double x, double y, double angleRad) {
-        return x * Math.sin(angleRad) + y * Math.cos(angleRad);
-    }
-
     private void resetPoseToCloseAutoStart() {
         if (driveBase == null || driveBase.getFollower() == null) {
             return;
         }
-        boolean isRedAlliance = allianceColor == MatchStateStore.AllianceColor.RED;
-        double poseX = isRedAlliance ? closeAutoStartRedPoseXIn : closeAutoStartBluePoseXIn;
-        double poseY = isRedAlliance ? closeAutoStartRedPoseYIn : closeAutoStartBluePoseYIn;
-        double headingDeg = isRedAlliance ? closeAutoStartRedPoseHeadingDeg : closeAutoStartBluePoseHeadingDeg;
+        double poseX = AutonomousConfiguration.closeAutoStartPoseXIn(allianceColor);
+        double poseY = AutonomousConfiguration.closeAutoStartPoseYIn(allianceColor);
+        double headingDeg = AutonomousConfiguration.closeAutoStartPoseHeadingDeg(allianceColor);
         double flippedHeadingDeg = headingDeg + 180.0;
         driveBase.getFollower().setPose(
                 new com.pedropathing.geometry.Pose(
