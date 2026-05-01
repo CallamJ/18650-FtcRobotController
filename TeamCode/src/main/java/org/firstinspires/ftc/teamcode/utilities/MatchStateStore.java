@@ -1,14 +1,20 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import androidx.annotation.Nullable;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
+import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Turret;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 
 public final class MatchStateStore {
     private static final String SNAPSHOT_KEY = "match_state_snapshot_v1";
+    private static Snapshot latestLiveSnapshot;
+    private static Snapshot latestPersistentSnapshot;
+    private static ModeKind latestLiveSnapshotSource = ModeKind.UNKNOWN;
 
     private MatchStateStore() {}
 
@@ -48,12 +54,8 @@ public final class MatchStateStore {
             AllianceColor allianceColor,
             @Nullable SmartLimelight3A.AprilTag obeliskTag
     ) {
-        if (!PersistentStorage.isInitialized()) {
-            return;
-        }
-
         Snapshot snapshot = new Snapshot();
-        Snapshot previous = getLatestSnapshot();
+        Snapshot previous = getLatestSnapshotForCarryForward();
         snapshot.savedAtUnixMs = System.currentTimeMillis();
         snapshot.allianceColor = allianceColor.name();
 
@@ -91,15 +93,25 @@ public final class MatchStateStore {
             snapshot.obeliskSeenAtUnixMs = snapshot.savedAtUnixMs;
         }
 
-        PersistentStorage.saveObject(SNAPSHOT_KEY, snapshot);
+        ModeKind currentModeKind = getCurrentModeKind();
+        latestLiveSnapshot = snapshot;
+        latestLiveSnapshotSource = currentModeKind;
+        if (shouldPersistForMode(currentModeKind)) {
+            savePersistentSnapshot(snapshot);
+        }
     }
 
     @Nullable
     public static Snapshot getLatestSnapshot() {
-        if (!PersistentStorage.isInitialized()) {
-            return null;
+        if (shouldUseLiveSnapshotForCurrentOpMode()) {
+            if (latestLiveSnapshot != null && latestLiveSnapshotSource == ModeKind.AUTONOMOUS) {
+                return latestLiveSnapshot;
+            }
+            if (latestPersistentSnapshot != null) {
+                return latestPersistentSnapshot;
+            }
         }
-        return PersistentStorage.getObject(SNAPSHOT_KEY, Snapshot.class);
+        return getStoredSnapshot();
     }
 
     @Nullable
@@ -151,9 +163,79 @@ public final class MatchStateStore {
     }
 
     public static void clear() {
-        if (!PersistentStorage.isInitialized()) {
-            return;
+        latestLiveSnapshot = null;
+        latestPersistentSnapshot = null;
+        latestLiveSnapshotSource = ModeKind.UNKNOWN;
+        if (PersistentStorage.isInitialized()) {
+            PersistentStorage.remove(SNAPSHOT_KEY);
         }
-        PersistentStorage.remove(SNAPSHOT_KEY);
+    }
+
+    @Nullable
+    private static Snapshot getStoredSnapshot() {
+        if (!PersistentStorage.isInitialized()) {
+            return null;
+        }
+        latestPersistentSnapshot = PersistentStorage.getObject(SNAPSHOT_KEY, Snapshot.class);
+        return latestPersistentSnapshot;
+    }
+
+    private static void savePersistentSnapshot(Snapshot snapshot) {
+        latestPersistentSnapshot = snapshot;
+        if (PersistentStorage.isInitialized()) {
+            PersistentStorage.saveObject(SNAPSHOT_KEY, snapshot);
+        }
+    }
+
+    private static boolean shouldPersistForMode(ModeKind modeKind) {
+        return modeKind == ModeKind.AUTONOMOUS;
+    }
+
+    private static boolean shouldUseLiveSnapshotForCurrentOpMode() {
+        return getCurrentModeKind() == ModeKind.TELEOP;
+    }
+
+    private static ModeKind getCurrentModeKind() {
+        OpModeCore opMode = OpModeCore.getInstance();
+        if (opMode == null) {
+            return ModeKind.UNKNOWN;
+        }
+
+        ModeKind annotatedMode = getAnnotatedModeKind(opMode.getClass());
+        if (annotatedMode != ModeKind.UNKNOWN) {
+            return annotatedMode;
+        }
+        return ModeKind.UNKNOWN;
+    }
+
+    @Nullable
+    private static Snapshot getLatestSnapshotForCarryForward() {
+        if (latestLiveSnapshot != null) {
+            return latestLiveSnapshot;
+        }
+        if (latestPersistentSnapshot != null) {
+            return latestPersistentSnapshot;
+        }
+        return getStoredSnapshot();
+    }
+
+    private static ModeKind getAnnotatedModeKind(@Nullable Class<?> opModeClass) {
+        Class<?> current = opModeClass;
+        while (current != null) {
+            if (current.isAnnotationPresent(TeleOp.class)) {
+                return ModeKind.TELEOP;
+            }
+            if (current.isAnnotationPresent(Autonomous.class)) {
+                return ModeKind.AUTONOMOUS;
+            }
+            current = current.getSuperclass();
+        }
+        return ModeKind.UNKNOWN;
+    }
+
+    private enum ModeKind {
+        TELEOP,
+        AUTONOMOUS,
+        UNKNOWN
     }
 }
