@@ -6,6 +6,7 @@ import org.firstinspires.ftc.teamcode.components.mechanisms.Hood;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Launcher;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Turret;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
+import org.firstinspires.ftc.teamcode.core.implementations.AutonomousConfiguration;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
@@ -32,7 +33,6 @@ public class FireControlSystem {
     private boolean depotAutoAimEnabled = true;
     private State state;
     private boolean runLauncher = false;
-    private double fallbackVelocity = 1500;
     public static double maxVelocity = 5000;
     public static double bearingToDepot = 0;
     private boolean firing = false;
@@ -85,7 +85,7 @@ public class FireControlSystem {
                 aimTowardDepotPoseIfConfigured();
             }
             if(runLauncher){
-                launcher.setTargetVelocity(fallbackVelocity);
+                launcher.setTargetVelocity(AutonomousConfiguration.targetVelocity);
             }
         } else {
             try {
@@ -144,10 +144,6 @@ public class FireControlSystem {
 
     public void toggleLauncher(){
         runLauncher = !runLauncher;
-    }
-
-    public void setFallbackVelocity(double fallbackVelocity){
-        this.fallbackVelocity = fallbackVelocity;
     }
 
     public void setDepotPose(Pose depotPose) {

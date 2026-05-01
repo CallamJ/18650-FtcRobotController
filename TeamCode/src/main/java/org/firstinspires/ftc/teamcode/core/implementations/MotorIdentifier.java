@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.core.implementations;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
-import org.firstinspires.ftc.teamcode.hardware.Hardware;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 
 @TeleOp(name = "3 - Motor Identifier")

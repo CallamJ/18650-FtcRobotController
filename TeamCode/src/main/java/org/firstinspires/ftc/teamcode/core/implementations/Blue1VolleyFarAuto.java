@@ -58,7 +58,7 @@ public class Blue1VolleyFarAuto extends AutoOpBase {
     protected List<StepSpec> buildPlan() {
         List<StepSpec> steps = new ArrayList<>();
         steps.add(instantStep("Start Launcher", () -> {
-            if (fcs == null || !runFCS) {
+            if (fcs == null || !AutonomousConfiguration.runFCS) {
                 throw new IllegalStateException("FCS unavailable for far auto launch control");
             }
             fcs.startLauncher();

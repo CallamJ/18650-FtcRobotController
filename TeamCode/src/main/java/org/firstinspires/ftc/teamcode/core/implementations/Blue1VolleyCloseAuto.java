@@ -37,7 +37,7 @@ public class Blue1VolleyCloseAuto extends AutoOpBase {
                     if (collector != null) {
                         collector.setPower(1);
                     }
-                    if (fcs == null || !runFCS) {
+                    if (fcs == null || !AutonomousConfiguration.runFCS) {
                         throw new IllegalStateException("FCS unavailable for close auto launch control");
                     }
                     fcs.startLauncher();

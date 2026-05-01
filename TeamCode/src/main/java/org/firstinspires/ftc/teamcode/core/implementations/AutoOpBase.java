@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.paths.PathBuilder;
 import com.pedropathing.paths.PathChain;
@@ -11,7 +10,6 @@ import org.firstinspires.ftc.teamcode.components.subsystems.*;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
 import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
-import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.hardware.SmartCameraColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
@@ -27,7 +25,6 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-@Configurable
 public abstract class AutoOpBase extends OpModeCore {
     private static final Logger log = LoggerFactory.getLogger(AutoOpBase.class);
     protected static final SmartLimelight3A.AprilTag.Type DEFAULT_TAG_PATTERN = SmartLimelight3A.AprilTag.Type.OBELISK_GPP;
@@ -46,27 +43,6 @@ public abstract class AutoOpBase extends OpModeCore {
     protected static FireControlSystem fcs;
     protected static SmartLimelight3A limelight;
     protected static SmartCameraColorSensor frontCameraSensor;
-    public static boolean runFCS = true;
-    public static double targetVelocity = 2000;
-    public static double matchStateSaveIntervalMs = 500;
-    public static boolean enableObeliskAcquisitionAssist = true;
-    public static double obeliskAcquisitionTimeoutSec = 3.0;
-    public static double blueObeliskPoseX = 72;
-    public static double blueObeliskPoseY = 0;
-    public static double redObeliskPoseX = 72;
-    public static double redObeliskPoseY = 0;
-    public static double autoFollowerMaxPower = 1.0;
-    public static double autoPathEndVelocityConstraint = 0.1;
-    public static double autoPathEndTranslationalConstraint = 0.1;
-    public static double autoPathEndHeadingConstraint = 0.007;
-    public static double autoPathEndTValueConstraint = 0.995;
-    public static double autoPathEndTimeoutConstraintMs = 100.0;
-    public static double autoPathBrakingStrength = 1.0;
-    public static double autoPathBrakingStart = 1.0;
-    public static int autoPathBezierSearchLimit = 10;
-    public static boolean autoPathUseGlobalDeceleration = false;
-    public static boolean autoPathDisableDeceleration = false;
-
     protected SmartLimelight3A.AprilTag aprilTag = null;
     protected MatchStateStore.AllianceColor allianceColor = MatchStateStore.AllianceColor.BLUE;
     private long lastMatchStateSaveMs = 0;
@@ -197,7 +173,7 @@ public abstract class AutoOpBase extends OpModeCore {
         turret = null;
         fcs = null;
         limelight = null;
-        runFCS = true;
+        AutonomousConfiguration.runFCS = true;
     }
 
     @Override
@@ -205,7 +181,7 @@ public abstract class AutoOpBase extends OpModeCore {
         resetSubsystemReferences();
         allianceColor = getAutonomousAllianceColor();
         lastMatchStateSaveMs = 0;
-        obeliskAssistComplete = !enableObeliskAcquisitionAssist;
+        obeliskAssistComplete = !AutonomousConfiguration.enableObeliskAcquisitionAssist;
         obeliskAssistStartSec = 0;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
@@ -313,7 +289,6 @@ public abstract class AutoOpBase extends OpModeCore {
                         driveBase,
                         null
                 );
-                fcs.setFallbackVelocity(targetVelocity);
                 fcs.setAllianceColor(allianceColor);
             } else {
                 if(launcher == null) {
@@ -337,7 +312,7 @@ public abstract class AutoOpBase extends OpModeCore {
                 .addData("Step", () -> activeStepName)
                 .addData("Status", () -> activeStepStatus)
                 .addData("Step Elapsed (s)", () -> activeStepElapsedSec)
-                .addData("Drive Max Power", () -> autoFollowerMaxPower)
+                .addData("Drive Max Power", () -> AutonomousConfiguration.autoFollowerMaxPower)
                 .addData("Plan Result", () -> {
                     if (lastPlanResult == null) return "Not started";
                     if (lastPlanResult.success) return "Success";
@@ -514,11 +489,11 @@ public abstract class AutoOpBase extends OpModeCore {
             storageController.tick();
         }
 
-        if (fcs != null && runFCS) {
+        if (fcs != null && AutonomousConfiguration.runFCS) {
             try {
                 fcs.tick();
             } catch (Exception e) {
-                runFCS = false;
+                AutonomousConfiguration.runFCS = false;
                 String message = e.getMessage();
                 prettyTelem.error("FCS tick failed; disabling FCS. " +
                         e.getClass().getSimpleName() +
@@ -551,7 +526,7 @@ public abstract class AutoOpBase extends OpModeCore {
 
     protected final void persistMatchStateIfDue(boolean force) {
         long now = System.currentTimeMillis();
-        long intervalMs = Math.max(100L, (long) matchStateSaveIntervalMs);
+        long intervalMs = Math.max(100L, (long) AutonomousConfiguration.matchStateSaveIntervalMs);
         if (!force && now - lastMatchStateSaveMs < intervalMs) {
             return;
         }
@@ -561,7 +536,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     private void runObeliskAcquisitionAssist() {
-        if (!enableObeliskAcquisitionAssist || obeliskAssistComplete) {
+        if (!AutonomousConfiguration.enableObeliskAcquisitionAssist || obeliskAssistComplete) {
             if (fcs != null) {
                 fcs.setDepotAutoAimEnabled(true);
             }
@@ -582,7 +557,7 @@ public abstract class AutoOpBase extends OpModeCore {
 
         SmartLimelight3A.AprilTag obeliskTag = limelight.getFirstObelisk();
         double elapsedSec = Math.max(0, getRuntime() - obeliskAssistStartSec);
-        boolean timedOut = elapsedSec >= Math.max(0.1, obeliskAcquisitionTimeoutSec);
+        boolean timedOut = elapsedSec >= Math.max(0.1, AutonomousConfiguration.obeliskAcquisitionTimeoutSec);
 
         if (obeliskTag != null) {
             aprilTag = obeliskTag;
@@ -620,9 +595,9 @@ public abstract class AutoOpBase extends OpModeCore {
 
     private Pose getAllianceObeliskPose() {
         if (allianceColor == MatchStateStore.AllianceColor.RED) {
-            return new Pose(redObeliskPoseX, redObeliskPoseY);
+            return new Pose(AutonomousConfiguration.redObeliskPoseX, AutonomousConfiguration.redObeliskPoseY);
         }
-        return new Pose(blueObeliskPoseX, blueObeliskPoseY);
+        return new Pose(AutonomousConfiguration.blueObeliskPoseX, AutonomousConfiguration.blueObeliskPoseY);
     }
 
     private static double normalizeDegrees(double angleDeg) {
@@ -651,7 +626,7 @@ public abstract class AutoOpBase extends OpModeCore {
     }
 
     protected boolean isFcsReady() {
-        if (fcs == null || !runFCS) {
+        if (fcs == null || !AutonomousConfiguration.runFCS) {
             return true;
         }
         return fcs.isTurretAligned() && fcs.isLauncherSpun();
@@ -813,21 +788,21 @@ public abstract class AutoOpBase extends OpModeCore {
         }
 
         PathConstraints constraints = new PathConstraints(
-                autoPathEndTValueConstraint,
-                autoPathEndVelocityConstraint,
-                autoPathEndTranslationalConstraint,
-                autoPathEndHeadingConstraint,
-                autoPathEndTimeoutConstraintMs,
-                autoPathBrakingStrength,
-                Math.max(1, autoPathBezierSearchLimit),
-                autoPathBrakingStart
+                AutonomousConfiguration.autoPathEndTValueConstraint,
+                AutonomousConfiguration.autoPathEndVelocityConstraint,
+                AutonomousConfiguration.autoPathEndTranslationalConstraint,
+                AutonomousConfiguration.autoPathEndHeadingConstraint,
+                AutonomousConfiguration.autoPathEndTimeoutConstraintMs,
+                AutonomousConfiguration.autoPathBrakingStrength,
+                Math.max(1, AutonomousConfiguration.autoPathBezierSearchLimit),
+                AutonomousConfiguration.autoPathBrakingStart
         );
 
         PathBuilder builder = new PathBuilder(follower, constraints);
-        if (autoPathDisableDeceleration) {
+        if (AutonomousConfiguration.autoPathDisableDeceleration) {
             builder.setNoDeceleration();
-        } else if (autoPathUseGlobalDeceleration) {
-            builder.setGlobalDeceleration(autoPathBrakingStart);
+        } else if (AutonomousConfiguration.autoPathUseGlobalDeceleration) {
+            builder.setGlobalDeceleration(AutonomousConfiguration.autoPathBrakingStart);
         }
         return builder;
     }

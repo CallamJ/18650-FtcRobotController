@@ -93,7 +93,7 @@ public class Blue3VolleyCloseAuto extends AutoOpBase {
             if (collector != null) {
                 collector.setPower(COLLECTOR_IDLE_POWER);
             }
-            if (fcs == null || !runFCS) {
+            if (fcs == null || !AutonomousConfiguration.runFCS) {
                 throw new IllegalStateException("FCS unavailable for close auto launch control");
             }
             fcs.startLauncher();
@@ -147,7 +147,7 @@ public class Blue3VolleyCloseAuto extends AutoOpBase {
                 PATH_TIMEOUT_SEC
         ));
         steps.add(conditionalInstantStep(cycleIndex, "Start Launcher " + label, () -> {
-            if (fcs == null || !runFCS) {
+            if (fcs == null || !AutonomousConfiguration.runFCS) {
                 throw new IllegalStateException("FCS unavailable for close auto launch control");
             }
             fcs.startLauncher();

@@ -91,7 +91,6 @@ public class MainTeleOp extends TeleOpCore {
         fcs = null;
         limelight = null;
         limelight3A = null;
-        limelightLocalizer = null;
     }
 
     @Override
@@ -164,7 +163,6 @@ public class MainTeleOp extends TeleOpCore {
                     driveBase,
                     null
             );
-            fcs.setFallbackVelocity(launchVelocity);
             fcs.setAllianceColor(allianceColor);
         } catch (Exception e) {
             prettyTelem.error("Fire Control System failed to initialize, skipping: " + e.getMessage());
@@ -324,15 +322,6 @@ public class MainTeleOp extends TeleOpCore {
         if(fcs != null){
             if(gamepad1.xPressed()){
                 fcs.toggleLauncher();
-            }
-            if(gamepad2.dpadDownPressed()){
-                launchVelocity -= 50;
-                fcs.setFallbackVelocity(launchVelocity);
-            }
-
-            if(gamepad2.dpadUpPressed()){
-                launchVelocity += 50;
-                fcs.setFallbackVelocity(launchVelocity);
             }
         }
 
