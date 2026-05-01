@@ -114,6 +114,7 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
 
     @Override
     protected void onInitialize() {
+        super.onInitialize();
 
         try {
             indexer = new Indexer(hardware.getMotor("indexerMotor", true));
@@ -1523,4 +1524,3 @@ public class ColorSensorAutoTuningTeleOp extends TeleOpCore {
         int failed;
     }
 }
-

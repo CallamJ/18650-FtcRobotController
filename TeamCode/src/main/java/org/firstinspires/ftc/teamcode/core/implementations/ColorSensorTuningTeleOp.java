@@ -28,6 +28,7 @@ public class ColorSensorTuningTeleOp extends TeleOpCore {
 
     @Override
     protected void onInitialize() {
+        super.onInitialize();
 
         frontLeftSensor = tryGetSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
         frontRightSensor = tryGetSensor(ColorMatchConfig.FRONT_SENSOR_NAME);
@@ -359,4 +360,3 @@ public class ColorSensorTuningTeleOp extends TeleOpCore {
         }
     }
 }
-

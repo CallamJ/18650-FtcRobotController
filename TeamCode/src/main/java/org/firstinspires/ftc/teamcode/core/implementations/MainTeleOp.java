@@ -99,6 +99,8 @@ public class MainTeleOp extends TeleOpCore {
 
         driveBase = null;
         feedWheels = null;
+        feedRamp = null;
+        feeder = null;
         turret = null;
         collector = null;
         indexer = null;
@@ -109,15 +111,18 @@ public class MainTeleOp extends TeleOpCore {
             frontCameraSensor.close();
         }
         frontCameraSensor = null;
+        frontColorSensor = null;
         hood = null;
         fcs = null;
         limelight = null;
         limelight3A = null;
+        limelightLocalizer = null;
     }
 
     @Override
     protected void onInitialize(){
         //noinspection DuplicatedCode
+        super.onInitialize();
         resetSubsystemReferences();
         startupSnapshot = MatchStateStore.getFreshSnapshot(Math.max(1000L, (long) matchStateFreshnessMs));
         allianceColor = startupSnapshot != null
@@ -127,6 +132,7 @@ public class MainTeleOp extends TeleOpCore {
         lastMatchStateSaveMs = 0;
         teleOpTaskManager = null;
         clearLeftSlotWhenFeederReturns = false;
+        runFCS = true;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
@@ -196,12 +202,17 @@ public class MainTeleOp extends TeleOpCore {
             indexer = new Indexer(hardware.getMotor("indexerMotor", true));
             collector = new Collector(hardware.getMotor("collectorMotor"));
             frontColorSensor = hardware.getColorSensor("frontColorSensor");
-            if(frontColorSensor != null) {
-                if(!frontColorSensor.hasDistanceSensing()){
-                    prettyTelem.error("Front color sensor must have distance sensing, but does not.");
-                }
-            } else {
-                prettyTelem.error("Color sensor failed to initialize.");
+            if (feeder == null) {
+                throw new IllegalStateException("Feeder unavailable");
+            }
+            if (fcs == null) {
+                throw new IllegalStateException("Fire control system unavailable");
+            }
+            if (frontColorSensor == null) {
+                throw new IllegalStateException("Color sensor failed to initialize");
+            }
+            if (!frontColorSensor.hasDistanceSensing()) {
+                throw new IllegalStateException("Front color sensor must support distance sensing");
             }
             indexerStorage = new IndexerStorage(
                     indexer,
@@ -314,12 +325,16 @@ public class MainTeleOp extends TeleOpCore {
 
         if(volleyStorageManager != null){
             if(gamepad1.leftBumperPressed()){
-                feeder.stopFeeding();
+                if (feeder != null) {
+                    feeder.stopFeeding();
+                }
                 indexer.advanceIndexCounterclockwise();
                 volleyStorageManager.dropFreshFlag();
             }
             if(gamepad1.rightBumperPressed()){
-                feeder.stopFeeding();
+                if (feeder != null) {
+                    feeder.stopFeeding();
+                }
                 indexer.advanceIndexClockwise();
                 volleyStorageManager.dropFreshFlag();
             }
@@ -361,12 +376,12 @@ public class MainTeleOp extends TeleOpCore {
             if(gamepad1.xPressed()){
                 fcs.toggleLauncher();
             }
-            if(gamepad1.dpadDownPressed()){
+            if(gamepad2.dpadDownPressed()){
                 launchVelocity -= 50;
                 fcs.setFallbackVelocity(launchVelocity);
             }
 
-            if(gamepad1.dpadUpPressed()){
+            if(gamepad2.dpadUpPressed()){
                 launchVelocity += 50;
                 fcs.setFallbackVelocity(launchVelocity);
             }
@@ -499,7 +514,7 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Is Busy", () -> indexer != null && indexer.isBusy())
                 .addData("Current Index", () -> indexer == null ? "n/a" : indexer.getCurrentIndex())
                 .addData("Target Index", () -> indexer == null ? "n/a" : indexer.getTargetIndex())
-                .addData("Velocity", () -> indexer.getVelocity());
+                .addData("Velocity", () -> indexer == null ? "n/a" : indexer.getVelocity());
         prettyTelem.addLine("Launcher")
                 .addData("Current Velocity", () -> launcher == null ? "n/a" : launcher.getVelocity())
                 .addData("Target Velocity", () -> launcher == null ? "n/a" : launcher.getTargetVelocity())

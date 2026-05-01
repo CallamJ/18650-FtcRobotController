@@ -6,6 +6,7 @@ import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 
 import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.Queue;
 
 @Configurable
@@ -40,13 +41,12 @@ public class VolleyFireStorageManager {
             IndexerStorage indexerStorage,
             FireControlSystem fcs
     ) {
-        assert fcs != null;
-        this.feeder = feeder;
-        this.indexer = indexer;
-        this.indexerStorage = indexerStorage;
+        this.feeder = Objects.requireNonNull(feeder, "feeder");
+        this.indexer = Objects.requireNonNull(indexer, "indexer");
+        this.indexerStorage = Objects.requireNonNull(indexerStorage, "indexerStorage");
         this.taskQueue = new ArrayDeque<>();
         this.state = State.RESTING;
-        this.fcs = fcs;
+        this.fcs = Objects.requireNonNull(fcs, "fcs");
     }
 
     public IndexerStorage indexerStorage() {
@@ -188,6 +188,7 @@ public class VolleyFireStorageManager {
                 if (indexerStorage.isEmpty()) {
                     activeTask = null;
                     checkTasks();
+                    return;
                 }
 
                 if(indexerStorage.hasPurple() && indexerStorage.hasGreen() && indexerStorage.isFull()) {
@@ -202,6 +203,7 @@ public class VolleyFireStorageManager {
                 if (indexerStorage.isEmpty()) {
                     activeTask = null;
                     checkTasks();
+                    return;
                 }
 
                 if(indexerStorage.hasPurple() && indexerStorage.hasGreen() && indexerStorage.isFull()) {
@@ -216,6 +218,7 @@ public class VolleyFireStorageManager {
                 if (indexerStorage.isEmpty()) {
                     activeTask = null;
                     checkTasks();
+                    return;
                 }
 
                 indexerStorage.readyContentToLeft(IndexerStorage.SlotContent.GREEN);
@@ -226,6 +229,7 @@ public class VolleyFireStorageManager {
                 if (indexerStorage.isEmpty()) {
                     activeTask = null;
                     checkTasks();
+                    return;
                 }
 
                 state = State.PREPARING_TO_FIRE;
