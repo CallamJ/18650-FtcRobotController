@@ -7,7 +7,6 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import org.firstinspires.ftc.teamcode.components.subsystems.IndexerStorage;
-import org.firstinspires.ftc.teamcode.components.subsystems.SingleFireStorageManager;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
 import java.util.ArrayList;
