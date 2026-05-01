@@ -64,6 +64,7 @@ public class Blue3VolleyCloseAuto extends AutoOpBase {
 
     @Override
     protected void onInitialize() {
+        super.onInitialize();
         if (storageController != null) {
             storageController.indexerStorage().setLeftContent(IndexerStorage.SlotContent.PURPLE);
             storageController.indexerStorage().setRightContent(IndexerStorage.SlotContent.GREEN);
