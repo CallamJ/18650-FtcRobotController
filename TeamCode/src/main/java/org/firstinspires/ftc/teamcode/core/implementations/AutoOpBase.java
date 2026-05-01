@@ -17,8 +17,6 @@ import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +24,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public abstract class AutoOpBase extends OpModeCore {
-    private static final Logger log = LoggerFactory.getLogger(AutoOpBase.class);
     protected static final SmartLimelight3A.AprilTag.Type DEFAULT_TAG_PATTERN = SmartLimelight3A.AprilTag.Type.OBELISK_GPP;
 
     protected static DriveBase driveBase;
@@ -148,11 +145,7 @@ public abstract class AutoOpBase extends OpModeCore {
 
     private static void resetSubsystemReferences() {
         if (limelight != null) {
-            try {
-                limelight.stop();
-            } catch (Exception e) {
-                log.warn("Failed to stop previous limelight instance cleanly", e);
-            }
+            limelight.stop();
         }
 
         driveBase = null;
@@ -162,11 +155,7 @@ public abstract class AutoOpBase extends OpModeCore {
         launcher = null;
         storageController = null;
         if (frontCameraSensor != null) {
-            try {
-                frontCameraSensor.close();
-            } catch (Exception e) {
-                log.warn("Failed to close previous front camera color sensor cleanly", e);
-            }
+            frontCameraSensor.close();
         }
         frontCameraSensor = null;
         hood = null;
@@ -370,7 +359,6 @@ public abstract class AutoOpBase extends OpModeCore {
             } catch (Throwable error) {
                 String reason = "Step start failed: " + step.name() + " - " + error.getMessage();
                 prettyTelem.error(reason);
-                log.error(reason, error);
                 onPlanError(step, error);
                 if (!spec.continueOnFailure) {
                     lastPlanResult = new PlanResult(false, completed, reason);
@@ -409,7 +397,6 @@ public abstract class AutoOpBase extends OpModeCore {
                 step.stop(context);
             } catch (Throwable error) {
                 prettyTelem.warning("Step stop threw: " + step.name() + ": " + error.getMessage());
-                log.warn("Step stop threw: {}", step.name(), error);
             }
 
             activeStepStatus = status.name();
@@ -430,7 +417,6 @@ public abstract class AutoOpBase extends OpModeCore {
 
             prettyTelem.error(reason);
             if (stepError != null) {
-                log.error(reason, stepError);
                 onPlanError(step, stepError);
             }
 
@@ -498,7 +484,6 @@ public abstract class AutoOpBase extends OpModeCore {
                 prettyTelem.error("FCS tick failed; disabling FCS. " +
                         e.getClass().getSimpleName() +
                         (message != null ? ": " + message : ""));
-                log.error("FCS tick failed; disabling FCS", e);
             }
         } else {
             if (launcher != null) {

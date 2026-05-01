@@ -4,8 +4,8 @@ import org.firstinspires.ftc.teamcode.components.mechanisms.FeedRamp;
 import org.firstinspires.ftc.teamcode.components.mechanisms.FeedWheels;
 
 public class FeedSystem {
-    private FeedWheels wheels;
-    private FeedRamp ramp;
+    private final FeedWheels wheels;
+    private final FeedRamp ramp;
 
     public FeedSystem(FeedWheels wheels, FeedRamp ramp) {
         this.wheels = wheels;
