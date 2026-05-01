@@ -56,7 +56,7 @@ public class HardwareCache<T> implements Caching {
      * @return The latest cached value.
      */
     public T read() {
-        if (cachedValue == null || !cacheValid) {
+        if (!cacheValid) {
             updateCache();
         }
 

@@ -187,8 +187,8 @@ public class Hardware {
     }
 
     public void invalidateCaches() {
-        caches.forEach(Caching::invalidateCache);
         hubs.forEach(LynxModule::clearBulkCache);
+        caches.forEach(Caching::invalidateCache);
     }
 
     public LynxModule getControlHub(){
