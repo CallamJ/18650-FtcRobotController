@@ -50,6 +50,9 @@ public class MainTeleOp extends TeleOpCore {
     protected RollingPercentileWindow tickTimePercentiles = new RollingPercentileWindow(200);
     protected double lastTickTimeMs = 0;
     protected double maxObservedTickTimeMs = 0;
+    protected double tickTimeP50Ms = 0;
+    protected double tickTimeP95Ms = 0;
+    protected double tickTimeP99Ms = 0;
 
 
     private static final SmartLEDIndicator.IndicatorColor TURRET_ZERO_TRIM_LED_COLOR = SmartLEDIndicator.IndicatorColor.INDIGO;
@@ -126,6 +129,9 @@ public class MainTeleOp extends TeleOpCore {
         tickTimePercentiles = new RollingPercentileWindow(Math.max(1, tickTimePercentileWindow));
         lastTickTimeMs = 0;
         maxObservedTickTimeMs = 0;
+        tickTimeP50Ms = 0;
+        tickTimeP95Ms = 0;
+        tickTimeP99Ms = 0;
         manualAimMode = false;
         manualAimTargetDeg = 0;
         LiveMatchTuning.runTeleOpFcs = true;
@@ -427,7 +433,11 @@ public class MainTeleOp extends TeleOpCore {
         double tickTimeMs = tickTimer.milliseconds();
         lastTickTimeMs = tickTimeMs;
         tickTimeAverage.compute(tickTimeMs);
-        tickTimePercentiles.compute(tickTimeMs);
+        tickTimePercentiles.add(tickTimeMs);
+        double[] percentiles = tickTimePercentiles.getPercentiles(50, 95, 99);
+        tickTimeP50Ms = percentiles[0];
+        tickTimeP95Ms = percentiles[1];
+        tickTimeP99Ms = percentiles[2];
         if (tickTimeMs > maxObservedTickTimeMs) {
             maxObservedTickTimeMs = tickTimeMs;
         }
@@ -484,9 +494,9 @@ public class MainTeleOp extends TeleOpCore {
         prettyTelem.addLine("Loop Timing")
                 .addData("Last Tick (ms)", () -> lastTickTimeMs)
                 .addData("Avg Tick (ms)", tickTimeAverage::getAverage)
-                .addData("P50 (ms)", () -> tickTimePercentiles.getPercentile(50))
-                .addData("P95 (ms)", () -> tickTimePercentiles.getPercentile(95))
-                .addData("P99 (ms)", () -> tickTimePercentiles.getPercentile(99))
+                .addData("P50 (ms)", () -> tickTimeP50Ms)
+                .addData("P95 (ms)", () -> tickTimeP95Ms)
+                .addData("P99 (ms)", () -> tickTimeP99Ms)
                 .addData("Max Tick (ms)", () -> maxObservedTickTimeMs)
                 .addData("Samples", tickTimePercentiles::size);
 
