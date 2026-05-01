@@ -33,17 +33,6 @@ import org.slf4j.LoggerFactory;
 @Configurable
 @TeleOp(name = "1 - Main TeleOp")
 public class MainTeleOp extends TeleOpCore {
-    private enum TelemetryMode {
-        DISTILLED,
-        DEBUG
-    }
-
-    private enum ObeliskRelocalizeState {
-        IDLE,
-        WAITING_FOR_OBELISK
-    }
-
-    private static final Logger log = LoggerFactory.getLogger(MainTeleOp.class);
     protected static DriveBase driveBase;
     protected static FeedWheels feedWheels;
     protected static FeedRamp feedRamp;
@@ -97,9 +86,6 @@ public class MainTeleOp extends TeleOpCore {
     private boolean loadedFreshSnapshot = false;
     private long lastMatchStateSaveMs = 0;
     private TeleOpTaskManager teleOpTaskManager;
-    private TelemetryMode telemetryMode = TelemetryMode.DEBUG;
-    private ObeliskRelocalizeState obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
-    private String obeliskRelocalizeStatus = "IDLE";
     public static double lastSolvedObeliskPoseXIn = 0;
     public static double lastSolvedObeliskPoseYIn = 0;
     public static double lastSeenObeliskCamXIn = 0;
@@ -108,11 +94,7 @@ public class MainTeleOp extends TeleOpCore {
 
     private static void resetSubsystemReferences() {
         if (limelight != null) {
-            try {
-                limelight.stop();
-            } catch (Exception e) {
-                log.warn("Failed to stop previous limelight instance cleanly", e);
-            }
+            limelight.stop();
         }
 
         driveBase = null;
@@ -124,11 +106,7 @@ public class MainTeleOp extends TeleOpCore {
         indexerStorage = null;
         volleyStorageManager = null;
         if (frontCameraSensor != null) {
-            try {
-                frontCameraSensor.close();
-            } catch (Exception e) {
-                log.warn("Failed to close previous front camera color sensor cleanly", e);
-            }
+            frontCameraSensor.close();
         }
         frontCameraSensor = null;
         hood = null;
@@ -148,9 +126,6 @@ public class MainTeleOp extends TeleOpCore {
         loadedFreshSnapshot = startupSnapshot != null;
         lastMatchStateSaveMs = 0;
         teleOpTaskManager = null;
-        telemetryMode = TelemetryMode.DEBUG;
-        obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
-        obeliskRelocalizeStatus = "IDLE";
         clearLeftSlotWhenFeederReturns = false;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
@@ -430,15 +405,6 @@ public class MainTeleOp extends TeleOpCore {
             volleyStorageManager.tick();
         }
 
-//        if(limelightLocalizer != null){
-//            if(limelightLocalizer.hasDetection()){
-//                Pose latestPose = limelightLocalizer.getLatestPose();
-//                driveBase.getFollower().poseTracker.setPose(
-//                        new com.pedropathing.geometry.Pose(latestPose.x(), latestPose.y(), Math.toRadians(latestPose.heading()))
-//                );
-//            }
-//        }
-
         if(fcs != null && runFCS){
             try {
                 fcs.tick();
@@ -448,7 +414,6 @@ public class MainTeleOp extends TeleOpCore {
                 prettyTelem.error("FCS tick failed; disabling FCS. " +
                         e.getClass().getSimpleName() +
                         (message != null ? ": " + message : ""));
-                log.error("FCS tick failed; disabling FCS", e);
             }
         }
 
@@ -557,78 +522,7 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Closest Match", () -> indexerStorage == null ? "N/A" : indexerStorage.getFrontClosestColorMatch())
                 .addData("Front Sensor Hue", () -> indexerStorage == null ? "n/a" : indexerStorage.getFrontSensorHue())
                 .addData("Front Sensor Distance", () -> frontColorSensor == null ? "n/a" : frontColorSensor.getDistance(DistanceUnit.MM));
-//        prettyTelem.addLine("LL3ALocalizer")
-//                .addData("Has Detection?", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::hasDetection)
-//                .addData("Latest Pose", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLatestPose)
-//                .addData("Solve Status", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLastSolveStatus)
-//                .addData("Last Rel Pose", limelightLocalizer == null ? ()->"not-initialized" : limelightLocalizer::getLastTagRelPose)
-//        ;
     }
-
-//    private void processObeliskRelocalization() {
-//        if (obeliskRelocalizeState != ObeliskRelocalizeState.WAITING_FOR_OBELISK) {
-//            return;
-//        }
-//        if (driveBase == null || driveBase.getFollower() == null || turret == null || limelight == null) {
-//            obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
-//            obeliskRelocalizeStatus = "Canceled: subsystem unavailable";
-//            if (fcs != null) {
-//                fcs.setDepotAutoAimEnabled(true);
-//            }
-//            return;
-//        }
-//
-//        SmartLimelight3A.AprilTag obelisk = limelight.getFirstObelisk();
-//        if (obelisk == null || obelisk.tagInCameraPose() == null || obelisk.tagInCameraPose().getPosition() == null) {
-//            return;
-//        }
-//
-//        Pose currentPose = driveBase.getPoseSimple();
-//        double headingDeg = currentPose.heading();
-//        double turretDeg = turret.getCurrentPosition();
-//
-//        double xCamIn = metersToInches(obelisk.tagInCameraPose().getPosition().x);
-//        double zCamIn = metersToInches(obelisk.tagInCameraPose().getPosition().z);
-//        lastSeenObeliskCamXIn = xCamIn;
-//        lastSeenObeliskCamZIn = zCamIn;
-//
-//        double cameraHeadingDeg = headingDeg - (turretDeg + cameraYawOffsetDeg);
-//        double cameraHeadingRad = Math.toRadians(cameraHeadingDeg);
-//        double camToTagWorldX = Math.cos(cameraHeadingRad) * zCamIn + Math.sin(cameraHeadingRad) * xCamIn;
-//        double camToTagWorldY = Math.sin(cameraHeadingRad) * zCamIn - Math.cos(cameraHeadingRad) * xCamIn;
-//
-//        double cameraWorldX = obeliskFieldXIn - camToTagWorldX;
-//        double cameraWorldY = obeliskFieldYIn - camToTagWorldY;
-//
-//        double turretHeadingRad = Math.toRadians(headingDeg - turretDeg);
-//        double cameraOffsetWorldX = rotateX(cameraOffsetTurretXIn, cameraOffsetTurretYIn, turretHeadingRad);
-//        double cameraOffsetWorldY = rotateY(cameraOffsetTurretXIn, cameraOffsetTurretYIn, turretHeadingRad);
-//        double turretAxisWorldX = cameraWorldX - cameraOffsetWorldX;
-//        double turretAxisWorldY = cameraWorldY - cameraOffsetWorldY;
-//
-//        double headingRad = Math.toRadians(headingDeg);
-//        double turretAxisOffsetWorldX = rotateX(turretAxisOffsetRobotXIn, turretAxisOffsetRobotYIn, headingRad);
-//        double turretAxisOffsetWorldY = rotateY(turretAxisOffsetRobotXIn, turretAxisOffsetRobotYIn, headingRad);
-//        double robotWorldX = turretAxisWorldX - turretAxisOffsetWorldX;
-//        double robotWorldY = turretAxisWorldY - turretAxisOffsetWorldY;
-//
-//        driveBase.getFollower().setPose(
-//                new com.pedropathing.geometry.Pose(
-//                        robotWorldX,
-//                        robotWorldY,
-//                        Math.toRadians(headingDeg)
-//                )
-//        );
-//
-//        lastSolvedObeliskPoseXIn = robotWorldX;
-//        lastSolvedObeliskPoseYIn = robotWorldY;
-//        obeliskRelocalizeState = ObeliskRelocalizeState.IDLE;
-//        obeliskRelocalizeStatus = "Solved from obelisk " + obelisk.type();
-//        if (fcs != null) {
-//            fcs.setDepotAutoAimEnabled(true);
-//        }
-//        persistMatchStateIfDue(true);
-//    }
 
     private static double metersToInches(double meters) {
         return meters * 39.37007874015748;
@@ -644,7 +538,6 @@ public class MainTeleOp extends TeleOpCore {
 
     private void resetPoseToCloseAutoStart() {
         if (driveBase == null || driveBase.getFollower() == null) {
-            obeliskRelocalizeStatus = "Pose reset unavailable (drive/follower missing)";
             return;
         }
         boolean isRedAlliance = allianceColor == MatchStateStore.AllianceColor.RED;
@@ -659,20 +552,15 @@ public class MainTeleOp extends TeleOpCore {
                         Math.toRadians(flippedHeadingDeg)
                 )
         );
-        obeliskRelocalizeStatus = "Pose reset to "
-                + (isRedAlliance ? "red" : "blue")
-                + " close auto start (180 flipped)";
         persistMatchStateIfDue(true);
     }
 
     private void resetTurretZeroToCurrent() {
         if (turret == null) {
-            obeliskRelocalizeStatus = "Turret zero reset unavailable";
             return;
         }
         turret.setCurrentAsZero();
         turret.setTargetPosition(0);
-        obeliskRelocalizeStatus = "Turret zeroed at current position";
         persistMatchStateIfDue(true);
     }
 
@@ -735,6 +623,5 @@ public class MainTeleOp extends TeleOpCore {
                         currentPose.getHeading()
                 )
         );
-        obeliskRelocalizeStatus = "Pose trim via touchpad";
     }
 }
