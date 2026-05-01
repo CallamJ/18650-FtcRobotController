@@ -69,14 +69,32 @@ public class RollingPercentileWindow implements DataFilter {
         if (values.isEmpty()) {
             return 0.0;
         }
+        return percentileFromSorted(sortedSnapshot(), percentile);
+    }
 
+    public double[] getPercentiles(double... percentiles) {
+        double[] result = new double[percentiles.length];
+        if (values.isEmpty()) {
+            return result;
+        }
+        double[] sorted = sortedSnapshot();
+        for (int i = 0; i < percentiles.length; i++) {
+            result[i] = percentileFromSorted(sorted, percentiles[i]);
+        }
+        return result;
+    }
+
+    private double[] sortedSnapshot() {
         double[] sorted = new double[values.size()];
         int index = 0;
         for (double value : values) {
             sorted[index++] = value;
         }
         Arrays.sort(sorted);
+        return sorted;
+    }
 
+    private static double percentileFromSorted(double[] sorted, double percentile) {
         if (percentile <= 0) {
             return sorted[0];
         }
