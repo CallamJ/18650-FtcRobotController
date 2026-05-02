@@ -21,14 +21,18 @@
   Lifecycle and opmode framework.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/core/implementations/`
   Real opmodes. This is where current robot behavior is easiest to understand.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/`
+  Shared building blocks above raw devices: `ActuatorComponent` and the `*AxisComponent` family (`MotorAxisComponent`, `MotorPositionAxisComponent`, `MotorVelocityAxisComponent`, `PositionAxisComponent`, `VelocityAxisComponent`).
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/mechanisms/`
-  Low-level robot mechanisms such as `DriveBase`, `Turret`, `Launcher`, `Indexer`, `Collector`, `FeedRamp`, and `FeedWheels`.
+  Low-level robot mechanisms: `DriveBase`, `Turret`, `Launcher`, `Hood`, `Indexer`, `Collector`, `FeedRamp`, `FeedWheels`, `LimelightLocalizer`.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/subsystems/`
   Coordination layers that sit above mechanisms, especially storage and firing logic.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/`
-  Smart FTC hardware wrappers, cache management, and sensor configuration.
+  Smart FTC hardware wrappers, cache management, and sensor configuration. Includes `hardware/controllers/` (PID family: `PID`, `DirectionalPID`, `VelocityPID`, `GravityPID`, `BangBangController`, `HybridController`) and `hardware/filters/` (`DataFilter`, `RollingAverage`).
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/drive/`
   Drive configuration and Pedro Pathing constants.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/vision/`
+  AprilTag readers (`AprilTagReader`, `MultiAprilTagReader`) and `Detection` types used by aiming/localization.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/utilities/`
   Persistent storage, match-state carryover, telemetry helpers, and small support types.
 - `FtcRobotController/`
@@ -150,13 +154,32 @@
 - If you change initialization order, cached hardware behavior, persisted keys, or supplier-based task wiring, explain the behavioral impact explicitly.
 - Do not "clean up" implicit persistence or control-handoff behavior unless you can describe what user-visible behavior replaces it.
 
+## Toolchain And Dependencies
+
+- Gradle modules are `:FtcRobotController` (Android library, vendored upstream) and `:TeamCode` (Android application, depends on `:FtcRobotController`). Package root is `org.firstinspires.ftc.teamcode`; app id is `com.qualcomm.ftcrobotcontroller`.
+- Android Gradle Plugin 8.7.0, `compileSdk` 35 (TeamCode) / 34 (FtcRobotController), `minSdk` 24, Java 8 source/target, NDK 21.3.6528147, ABIs `armeabi-v7a` + `arm64-v8a`.
+- `targetSdk` is intentionally pinned to 28 with `//noinspection ExpiredTargetSdkVersion` in `build.common.gradle`. Do not "fix" it — it is a deliberate FTC SDK requirement.
+- `versionCode` and `versionName` are scraped at configure time from `FtcRobotController/src/main/AndroidManifest.xml` by a regex in `build.common.gradle`. Bump version fields there, not in TeamCode.
+- FTC SDK pinned to `org.firstinspires.ftc:* @ 11.1.0` across RobotCore, Hardware, FtcCommon, Vision, Inspection, Blocks, OnBotJava, RobotServer.
+- Pedro Pathing pinned to `com.pedropathing:ftc:2.0.4` + `com.pedropathing:telemetry:1.0.0`. The Pedro 1.x → 2.x API shift matters when reading older code or external examples.
+- `@Configurable` runtime tuning surface comes from Panels: `com.bylazar:fullpanels:1.0.12`.
+- Non-default Maven sources: `https://maven.brott.dev/` (Road Runner) and `https://mymaven.bylazar.com/releases` (Pedro + Panels). Both are required for a clean build.
+- TeamCode-only Java deps worth noticing while reading utilities/persistence code: `commons-math3:3.6.1`, `jackson-databind:2.13.4.2`.
+
 ## Validation Guidance
 
 - Useful local commands:
-  - `.\gradlew.bat :TeamCode:assembleDebug`
+  - `.\gradlew.bat :TeamCode:assembleDebug` — TeamCode debug APK only
+  - `.\gradlew.bat assembleDebug` — both modules
   - `.\gradlew.bat lint`
+  - `.\gradlew.bat clean`
+- There is no JUnit or instrumentation test suite. `gradlew test` is effectively a no-op; do not invent test commands.
 - A compile is necessary but not sufficient for robot-facing changes.
 - For subsystem or opmode edits, call out what still needs driver-station or on-robot validation.
+
+## Cross-Tool Notes
+
+- A Codex-side skill at `.codex/skills/review-recent-commits/SKILL.md` encodes the same opmode-first reading order this file teaches. Useful as a cross-reference, but `AGENTS.md` remains the canonical agent guide.
 
 ## Keeping This File Current
 
