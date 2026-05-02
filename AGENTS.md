@@ -56,7 +56,7 @@
 ## Key Non-Obvious Contracts
 
 - `OpModeCore.frameworkTick()` invalidates hardware caches every loop through `hardware.invalidateCaches()`. Hardware wrappers depend on that refresh cycle.
-- Methods beginning with `on` in the opmode framework are intended to be true hooks. Implementers should not need to call `super.on...()` in normal usage.
+- Methods beginning with `on` in the opmode framework are hooks, but the super-call rule is hook-specific. `OpModeCore` and `TeleOpCore` route core setup through framework pre-init plumbing, so subclasses normally should not call `super.on...()` for those. **`AutoOpBase.onInitialize` is the exception**: it runs substantive setup (alliance color, drive-base motor config, Limelight init, obelisk-assist state, telemetry plumbing) that auto subclasses must inherit by calling `super.onInitialize()` — overriding without chaining silently strips that setup. When in doubt, read the parent's hook body before deciding.
 - `TeleOpCore` snapshots initial gamepad state through framework pre-init plumbing, not through subclass `super.onInitialize()` calls.
 - `Hardware` is now per-opmode, not global static state. Do not reintroduce the old `Hardware.init(...)` mental model.
 - Several opmodes keep subsystem references in static fields and explicitly reset them on init. That is intentional protection against stale state across FTC opmode reruns.
@@ -146,6 +146,19 @@
 - Be careful with stale abstractions and renamed classes. Some files represent older patterns that have been partially replaced.
 - Do not assume a file is current just because it is widely referenced. Some legacy files remain in support of older wrappers, tuning tools, or unfinished migrations.
 - Prefer caller-driven truth over old helper classes that look authoritative but are no longer the main path.
+
+## Repo-Specific Failure Patterns
+
+Failure modes attested by this codebase's commit history. Listed for use as a pre-flight checklist on reviews and edits. Add a new pattern only when the git log supports it; otherwise it's general judgment, not a documented pattern.
+
+- **State-machine cleanup omissions.** Multiple historical fixes have addressed transitions that didn't clear `activeTask`, didn't reset slot content after firing, missed a `break` in a switch arm, missed an `else` for a load-task with nothing to load, or chose a state without triggering its required side effect (e.g., `feeder.trigger()` skipped on a direct-load path). When editing `VolleyFireStorageManager`, `FireControlSystem`, or the auto plan runner, audit each transition for cleanup completeness and side-effect symmetry. Witnessed: `f1062cf`, `990855a`.
+- **Hardware cache correctness.** Recent fixes around the per-loop cache flow have addressed: ordering between Lynx bulk cache clear and per-device cache invalidation, treating `null` as "uncached" (it's a valid cached value, not a sentinel for empty), HSV/distance recomputed per call so two same-loop reads disagreed, and caches not being invalidated when their inputs (filter config) changed. When editing `Hardware`, `HardwareCache`, or any `Smart*` sensor wrapper, verify all four. Witnessed: `1b568fe`, `1225776`.
+- **Refactors that silently drop real-world calibration.** A hotfix was needed to re-add a potentiometer offset that a refactor had removed from the device-construction signature. The compiler does not catch this; only the robot does. When changing constructors, factory methods, or builders for hardware wrappers, audit every call site for parameters that carry calibration values. Witnessed: `a667b9a`.
+- **Auto subclasses overriding `onInitialize` without `super`.** `AutoOpBase.onInitialize` runs substantive setup (alliance, drive config, limelight, telemetry, obelisk state). Six auto subclasses were overriding without chaining; a fix added `super.onInitialize()` to all of them. Hook-specific: this rule is *opposite* of `OpModeCore`/`TeleOpCore` framework hooks — see *Key Non-Obvious Contracts*. Witnessed: `ff42101`.
+
+A separate framework convention worth preserving even though no historical fix attests it directly:
+
+- **Per-opmode reset of static subsystem fields.** Several opmodes hold subsystem references as `static` and explicitly reset them on init. The convention is the design — the absence of fix commits in this category suggests it's working. Removing the resets would reintroduce stale-state-across-opmode-reruns as a real failure mode.
 
 ## Editing Guidance
 
