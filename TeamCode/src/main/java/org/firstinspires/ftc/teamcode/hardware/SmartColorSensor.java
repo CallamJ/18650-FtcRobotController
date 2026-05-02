@@ -73,6 +73,7 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         this.appliedHueFilterWindow = Integer.MIN_VALUE;
         this.appliedSaturationFilterWindow = Integer.MIN_VALUE;
         this.appliedValueFilterWindow = Integer.MIN_VALUE;
+        hsvCache.invalidateCache();
     }
 
     public void setHsvRollingAverageWindow(int window) {
