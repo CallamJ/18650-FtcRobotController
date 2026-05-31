@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.utilities.Pose;
 
 @Configurable
 public class FireControlSystem {
-    public static double baseVelocity = 2700, kVDist = 620, minVelocity = 2900;
+    public static double baseVelocity = 2700, kVDist = 620, minVelocity = 3500;
     public static double hoodBasePos = 0.53, kHoodDist = 0.1;
     public static boolean useDepotPoseFallbackWhenTagNotVisible = true;
     public static double alignedButLauncherOffHueDeg = 145.0;
@@ -31,6 +31,7 @@ public class FireControlSystem {
     private Pose depotPose;
     private MatchStateStore.AllianceColor allianceColor = MatchStateStore.AllianceColor.BLUE;
     private boolean depotAutoAimEnabled = true;
+    private boolean turretAutoAimEnabled = true;
     private State state;
     private boolean runLauncher = false;
     public static double maxVelocity = 5000;
@@ -84,16 +85,15 @@ public class FireControlSystem {
             if (depotAutoAimEnabled) {
                 aimTowardDepotPoseIfConfigured();
             }
-            if(runLauncher){
-                launcher.setTargetVelocity(AutonomousConfiguration.targetVelocity);
-            }
         } else {
             try {
                 bearingToDepot = -depot.bearingDegToTag();
-                setTurretTargetClosestFacing(turret.getCurrentPosition() + bearingToDepot);
+                if (turretAutoAimEnabled) {
+                    setTurretTargetClosestFacing(turret.getCurrentPosition() + bearingToDepot);
+                }
                 hood.setTargetPosition(hoodBasePos + kHoodDist * depot.distanceXYToTagMeters());
                 if (runLauncher) {
-                    launcher.setTargetVelocity(Math.min(baseVelocity + depot.distanceXYToTagMeters() * kVDist, maxVelocity));
+                    launcher.setTargetVelocity(Math.min(Math.max(baseVelocity + depot.distanceXYToTagMeters() * kVDist, minVelocity), maxVelocity));
                 }
             } catch (IllegalStateException e) {
                 OpModeCore.getTelemetry().warning("Getting April Tag Bearing failed: " + e.getMessage());
@@ -169,6 +169,10 @@ public class FireControlSystem {
         this.depotAutoAimEnabled = depotAutoAimEnabled;
     }
 
+    public void setTurretAutoAimEnabled(boolean turretAutoAimEnabled) {
+        this.turretAutoAimEnabled = turretAutoAimEnabled;
+    }
+
     public void setLedOverrideColor(SmartLEDIndicator.IndicatorColor ledOverrideColor) {
         this.ledOverrideColor = ledOverrideColor;
     }
@@ -188,9 +192,11 @@ public class FireControlSystem {
 
         double headingToDepotDeg = Math.toDegrees(Math.atan2(deltaY, deltaX));
         double relativeBearingDeg = currentPose.heading() - headingToDepotDeg;
-        setTurretTargetClosestFacing(relativeBearingDeg);
+        if (turretAutoAimEnabled) {
+            setTurretTargetClosestFacing(relativeBearingDeg);
+        }
         hood.setTargetPosition(hoodBasePos + kHoodDist * (Math.hypot(deltaX, deltaY)) / 39.37);
-        launcher.setTargetVelocity(baseVelocity + kVDist * Math.hypot(deltaX, deltaY) / 39.37);
+        launcher.setTargetVelocity(Math.max(minVelocity, baseVelocity + kVDist * Math.hypot(deltaX, deltaY) / 39.37));
     }
 
     private Pose getTargetDepotPose() {
