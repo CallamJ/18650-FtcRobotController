@@ -66,12 +66,18 @@ public class MainTeleOp extends TeleOpCore {
     public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
     public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
     public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
+    public static SmartLEDIndicator.IndicatorColor manualAimLedColor = SmartLEDIndicator.IndicatorColor.YELLOW;
     public static double maintenancePoseTrimInchesPerTouchpadUnit = 12.0;
+    public static double manualAimDegreesPerSecond = 75.0;
+    public static double manualAimStickDeadband = 0.08;
     private MatchStateStore.AllianceColor allianceColor = defaultAllianceColor;
     private MatchStateStore.Snapshot startupSnapshot;
     private boolean loadedFreshSnapshot = false;
     private long lastMatchStateSaveMs = 0;
+    private long lastManualAimUpdateMs = 0;
     private TeleOpTaskManager teleOpTaskManager;
+    private boolean manualAimMode = false;
+    private double manualAimTargetDeg = 0;
     public static boolean clearLeftSlotWhenFeederReturns = false;
 
     private static void resetSubsystemReferences() {
@@ -110,7 +116,10 @@ public class MainTeleOp extends TeleOpCore {
                 : defaultAllianceColor;
         loadedFreshSnapshot = startupSnapshot != null;
         lastMatchStateSaveMs = 0;
+        lastManualAimUpdateMs = System.currentTimeMillis();
         teleOpTaskManager = null;
+        manualAimMode = false;
+        manualAimTargetDeg = 0;
         clearLeftSlotWhenFeederReturns = false;
         runFCS = true;
         tickTimeAverage = new RollingAverage(10);
@@ -177,6 +186,7 @@ public class MainTeleOp extends TeleOpCore {
                     null
             );
             fcs.setAllianceColor(allianceColor);
+            fcs.setTurretAutoAimEnabled(!manualAimMode);
         } catch (Exception e) {
             prettyTelem.error("Fire Control System failed to initialize, skipping: " + e.getMessage());
         }
@@ -261,12 +271,17 @@ public class MainTeleOp extends TeleOpCore {
             if (gamepad1.leftStickButtonPressed()) {
                 resetTurretZeroToCurrent();
             }
+            if (gamepad1.xPressed()) {
+                toggleManualAimMode();
+            }
             turretTrimActive |= applyZeroTrim(gamepad1);
             applyMaintenanceTouchpadPoseTrim(gamepad1);
             applyTurretTrimLedOverride(turretTrimActive);
 
             return;
         }
+        applyManualAimControl(gamepad1);
+        lastManualAimUpdateMs = System.currentTimeMillis();
         applyTurretTrimLedOverride(turretTrimActive);
 
         if (teleOpTaskManager != null) {
@@ -502,8 +517,10 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Power", () -> launcher == null ? "n/a" : launcher.getPower())
                 .addData("PID Result", () -> launcher == null ? "n/a" : launcher.getPidResult());
         prettyTelem.addLine("Turret")
+                .addData("Aim Mode", () -> manualAimMode ? "MANUAL" : "AUTO")
                 .addData("Current Angle", () -> turret == null ? "n/a" : turret.getCurrentPosition())
                 .addData("Target Angle", () -> turret == null ? "n/a" : turret.getTargetPosition())
+                .addData("Manual Target", () -> manualAimMode ? manualAimTargetDeg : "n/a")
                 .addData("Power", () -> turret == null ? "n/a" : turret.getPower())
                 .addData("Bearing To Tag", () -> FireControlSystem.bearingToDepot);
         prettyTelem.addLine("Storage Controller")
@@ -544,7 +561,42 @@ public class MainTeleOp extends TeleOpCore {
         }
         turret.setCurrentAsZero();
         turret.setTargetPosition(0);
+        manualAimTargetDeg = 0;
         persistMatchStateIfDue(true);
+    }
+
+    private void toggleManualAimMode() {
+        manualAimMode = !manualAimMode;
+        if (turret != null) {
+            manualAimTargetDeg = manualAimMode ? turret.getTargetPosition() : 0;
+            if (manualAimMode) {
+                turret.setTargetPosition(manualAimTargetDeg);
+            }
+        }
+        if (fcs != null) {
+            fcs.setTurretAutoAimEnabled(!manualAimMode);
+        }
+        lastManualAimUpdateMs = System.currentTimeMillis();
+    }
+
+    private void applyManualAimControl(SmartGamepad gamepad) {
+        if (!manualAimMode || turret == null) {
+            lastManualAimUpdateMs = System.currentTimeMillis();
+            return;
+        }
+
+        long nowMs = System.currentTimeMillis();
+        double elapsedSec = Math.max(0, (nowMs - lastManualAimUpdateMs) / 1000.0);
+        lastManualAimUpdateMs = nowMs;
+
+        double input = gamepad.rightTrigger - gamepad.leftTrigger;
+        if (Math.abs(input) <= manualAimStickDeadband) {
+            return;
+        }
+
+        manualAimTargetDeg += input * manualAimDegreesPerSecond * elapsedSec;
+        turret.setTargetPosition(manualAimTargetDeg);
+        manualAimTargetDeg = turret.getTargetPosition();
     }
 
     private boolean applyZeroTrim(SmartGamepad gamepad) {
@@ -580,7 +632,13 @@ public class MainTeleOp extends TeleOpCore {
         if (fcs == null) {
             return;
         }
-        fcs.setLedOverrideColor(turretTrimActive ? turretZeroTrimLedColor : null);
+        if (turretTrimActive) {
+            fcs.setLedOverrideColor(turretZeroTrimLedColor);
+        } else if (manualAimMode) {
+            fcs.setLedOverrideColor(manualAimLedColor);
+        } else {
+            fcs.setLedOverrideColor(null);
+        }
     }
 
     private void applyMaintenanceTouchpadPoseTrim(SmartGamepad gamepad) {
