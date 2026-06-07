@@ -8,10 +8,12 @@ buildscript {
     repositories {
         mavenCentral()
         google()
+        maven { url "https://repo.dairy.foundation/releases" }
     }
     dependencies {
         // Note for FTC Teams: Do not modify this yourself.
         classpath 'com.android.tools.build:gradle:8.7.0'
+        classpath "dev.frozenmilk:Load:0.2.4"
     }
 }
 
@@ -21,9 +23,14 @@ allprojects {
     repositories {
         mavenCentral()
         google()
+        maven { url "https://repo.dairy.foundation/releases" }
+        maven { url "https://repo.dairy.foundation/snapshots" }
     }
 }
 
 repositories {
     mavenCentral()
+    google()
+    maven { url "https://repo.dairy.foundation/releases" }
+    maven { url "https://repo.dairy.foundation/snapshots" }
 }
