@@ -56,15 +56,8 @@ public class HardwareCache<T> implements Caching {
             updateCache();
         }
 
-        switch (strategy) {
-            case UPDATE_WHEN_INVALIDATED:
-            case VALID_UNTIL_INVALIDATED: {
-                cacheRead = true;
-            } break;
-            
-            case INVALID_AFTER_FIRST_READ: {
-                invalidateCache();
-            } break;
+        if(strategy == Strategy.INVALID_AFTER_FIRST_READ){
+            invalidateCache();
         }
 
         return cachedValue;
