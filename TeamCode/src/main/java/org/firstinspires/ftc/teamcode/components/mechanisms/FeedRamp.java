@@ -1,24 +1,17 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.hardware.SmartServo;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
-@Configurable
 public class FeedRamp {
     SmartServo leftFeedServo, rightFeedServo;
 
     private double targetPosition;
 
-    public static double min = 0;
-    public static double max = 1;
-
-    public static double engagedPosition = 0.32;
-    public static double disengagedPosition = 1;
-
     public FeedRamp(SmartServo leftServo, SmartServo rightServo) {
         leftFeedServo = leftServo;
         rightFeedServo = rightServo;
-        setTargetPosition(disengagedPosition);
+        setTargetPosition(LiveMatchTuning.feedRampDisengagedPosition);
     }
 
     public void setTargetPosition(double position) {
@@ -39,19 +32,19 @@ public class FeedRamp {
     }
 
     public void engage(){
-        setTargetPosition(engagedPosition);
+        setTargetPosition(LiveMatchTuning.feedRampEngagedPosition);
     }
 
     public void disengage(){
-        setTargetPosition(disengagedPosition);
+        setTargetPosition(LiveMatchTuning.feedRampDisengagedPosition);
     }
 
     public boolean isEngaged(){
-        return targetPosition == engagedPosition;
+        return targetPosition == LiveMatchTuning.feedRampEngagedPosition;
     }
 
     private double clamp(double value){
-        return clamp(value, min, max);
+        return clamp(value, LiveMatchTuning.feedRampMin, LiveMatchTuning.feedRampMax);
     }
 
     private double clamp(double value, double min, double max){

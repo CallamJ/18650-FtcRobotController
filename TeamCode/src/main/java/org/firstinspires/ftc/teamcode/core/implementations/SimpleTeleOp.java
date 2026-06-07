@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
 import org.firstinspires.ftc.teamcode.components.mechanisms.*;
@@ -10,7 +9,6 @@ import org.firstinspires.ftc.teamcode.core.TeleOpCore;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
-@Configurable
 @TeleOp(name = "2 - Simple TeleOp")
 public class SimpleTeleOp extends TeleOpCore {
     protected static DriveBase driveBase;

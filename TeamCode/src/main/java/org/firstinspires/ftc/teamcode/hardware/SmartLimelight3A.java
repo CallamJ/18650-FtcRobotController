@@ -1,11 +1,11 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -18,8 +18,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-@Configurable
-
 public class SmartLimelight3A extends Device implements Caching, WrappedDevice<Limelight3A> {
     private static final Logger log = LoggerFactory.getLogger(SmartLimelight3A.class);
     private static final long WARN_THROTTLE_MS = 1000;
@@ -29,9 +27,6 @@ public class SmartLimelight3A extends Device implements Caching, WrappedDevice<L
     private final HardwareCache<LLStatus> statusCache;
     private long lastResultWarnMs = 0;
     private long lastStatusWarnMs = 0;
-    public static double cameraOnTurretRightOffsetMeters = 0.15;
-    public static double cameraOnTurretForwardOffsetMeters = 0;
-
     public SmartLimelight3A(String configName, Limelight3A limelight) {
         super(configName);
         this.limelight = limelight;
@@ -431,12 +426,12 @@ public class SmartLimelight3A extends Device implements Caching, WrappedDevice<L
 
         public double getTagYInTurretFrameMeters() {
             if (tagInCameraPose == null) throw new IllegalStateException("Pose not set");
-            return tagInCameraPose.getPosition().y + cameraOnTurretRightOffsetMeters;
+            return tagInCameraPose.getPosition().y + LiveMatchTuning.limelightCameraOnTurretRightOffsetMeters;
         }
 
         public double getTagZInTurretFrameMeters() {
             if (tagInCameraPose == null) throw new IllegalStateException("Pose not set");
-            return tagInCameraPose.getPosition().z + cameraOnTurretForwardOffsetMeters;
+            return tagInCameraPose.getPosition().z + LiveMatchTuning.limelightCameraOnTurretForwardOffsetMeters;
         }
 
         @NotNull

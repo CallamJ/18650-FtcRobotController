@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import org.firstinspires.ftc.teamcode.core.SmartGamepad;
 import org.firstinspires.ftc.teamcode.core.TeleOpCore;
@@ -11,7 +10,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Configurable
 @TeleOp(name = "4 - Limelight Diagnostics")
 public class LimelightDiagnosticsTeleOp extends TeleOpCore {
     public static String limelightName = "limelight";

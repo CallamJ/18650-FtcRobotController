@@ -1,9 +1,7 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
-@Configurable
 public final class AutonomousConfiguration {
     public static boolean runFCS = true;
     public static double targetVelocity = 2000;

@@ -1,30 +1,25 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.components.MotorPositionAxisComponent;
 import org.firstinspires.ftc.teamcode.hardware.SmartEncoder;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
-@Configurable
 public class Turret extends MotorPositionAxisComponent {
     private final SmartEncoder encoder;
-    public static double kP = 0.02, kI = 0, kD = 0.015, kF = 0, tolerance = 1;
-    public static float ticksPerDegree = (8192f / 360f) * (88f / 20f);
-    public static double minAngle = -90;
-    public static double maxAngle = 90;
     private double desiredTarget;
 
     public Turret(SmartMotor motor, SmartEncoder encoder) {
         super(
                 motor,
                 PID.builder()
-                        .setKP(() -> kP)
-                        .setKI(() -> kI)
-                        .setKD(() -> kD)
-                        .setKF(() -> kF)
-                        .setTolerance(tolerance)
+                        .setKP(() -> LiveMatchTuning.turretKp)
+                        .setKI(() -> LiveMatchTuning.turretKi)
+                        .setKD(() -> LiveMatchTuning.turretKd)
+                        .setKF(() -> LiveMatchTuning.turretKf)
+                        .setTolerance(LiveMatchTuning.turretToleranceDeg)
                         .setDirectionalKF(true)
                         .build()
         );
@@ -41,7 +36,7 @@ public class Turret extends MotorPositionAxisComponent {
 
     @Override
     public double getCurrentPosition() {
-        return encoder.getPosition() / ticksPerDegree;
+        return encoder.getPosition() / LiveMatchTuning.turretTicksPerDegree;
     }
 
     @Override
@@ -52,7 +47,7 @@ public class Turret extends MotorPositionAxisComponent {
 
     @Override
     protected double normalizeTargetPosition(double targetPosition) {
-        return clamp(targetPosition, minAngle, maxAngle);
+        return clamp(targetPosition, LiveMatchTuning.turretMinAngleDeg, LiveMatchTuning.turretMaxAngleDeg);
     }
 
     public double getDesiredTarget(){

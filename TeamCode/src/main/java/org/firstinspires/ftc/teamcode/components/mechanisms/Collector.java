@@ -1,11 +1,9 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
 
-@Configurable
 public class Collector {
     private final SmartMotor motor;
     public static Direction direction = Direction.REVERSE;

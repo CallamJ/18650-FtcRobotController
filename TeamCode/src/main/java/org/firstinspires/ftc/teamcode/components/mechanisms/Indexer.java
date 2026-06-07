@@ -1,31 +1,26 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.components.MotorPositionAxisComponent;
 import org.firstinspires.ftc.teamcode.hardware.SmartMotor;
 import org.firstinspires.ftc.teamcode.hardware.controllers.PID;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
-@Configurable
 public class Indexer extends MotorPositionAxisComponent {
-
-    public static double kP = 0.007, kI = 0, kD = 0.0075, kF = 0.000005, tolerance = 1, busyTolerance = 2.5;
-    public static double poweredMovePower = 1;
-    public static float ticksPerDegree = 8192f/360f;
 
     private boolean poweredApproachActive = false;
     private double poweredApproachDirection = 0;
-    private double poweredApproachPower = poweredMovePower;
+    private double poweredApproachPower = LiveMatchTuning.indexerPoweredMovePower;
 
     public Indexer(SmartMotor motor) {
         super(
                 motor,
                 PID.builder()
-                .setKP(() -> kP)
-                .setKI(() -> kI)
-                .setKD(() -> kD)
-                .setKF(() -> kF)
-                .setTolerance(tolerance)
+                .setKP(() -> LiveMatchTuning.indexerKp)
+                .setKI(() -> LiveMatchTuning.indexerKi)
+                .setKD(() -> LiveMatchTuning.indexerKd)
+                .setKF(() -> LiveMatchTuning.indexerKf)
+                .setTolerance(LiveMatchTuning.indexerToleranceDeg)
                 .setDirectionalKF(true)
                 .build()
         );
@@ -37,7 +32,7 @@ public class Indexer extends MotorPositionAxisComponent {
 
     @Override
     public boolean isBusy() {
-        return Math.abs(getCurrentPosition() - getTargetPosition()) > busyTolerance;
+        return Math.abs(getCurrentPosition() - getTargetPosition()) > LiveMatchTuning.indexerBusyToleranceDeg;
     }
 
     @Override
@@ -53,7 +48,7 @@ public class Indexer extends MotorPositionAxisComponent {
 
     @Override
     public double getCurrentPosition() {
-        return motor.getCurrentPosition() / ticksPerDegree;
+        return motor.getCurrentPosition() / LiveMatchTuning.indexerTicksPerDegree;
     }
 
     public long getCurrentIndex(){
@@ -104,7 +99,7 @@ public class Indexer extends MotorPositionAxisComponent {
     }
 
     public void advanceIndexClockwiseWithPower() {
-        advanceIndexClockwiseWithPower(1, poweredMovePower);
+        advanceIndexClockwiseWithPower(1, LiveMatchTuning.indexerPoweredMovePower);
     }
 
     public void advanceIndexClockwiseWithPower(double power) {
@@ -116,7 +111,7 @@ public class Indexer extends MotorPositionAxisComponent {
     }
 
     public void advanceIndexCounterclockwiseWithPower() {
-        advanceIndexCounterclockwiseWithPower(1, poweredMovePower);
+        advanceIndexCounterclockwiseWithPower(1, LiveMatchTuning.indexerPoweredMovePower);
     }
 
     public void advanceIndexCounterclockwiseWithPower(double power) {

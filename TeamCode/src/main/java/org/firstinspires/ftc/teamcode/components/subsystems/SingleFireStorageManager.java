@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
@@ -8,7 +7,6 @@ import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 import java.util.ArrayDeque;
 import java.util.Queue;
 
-@Configurable
 public class SingleFireStorageManager {
     private final FeedSystem feeder;
     private final Indexer indexer;

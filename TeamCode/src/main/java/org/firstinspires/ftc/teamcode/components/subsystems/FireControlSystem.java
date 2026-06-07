@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.components.mechanisms.DriveBase;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Hood;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Launcher;
@@ -9,18 +8,11 @@ import org.firstinspires.ftc.teamcode.core.OpModeCore;
 import org.firstinspires.ftc.teamcode.core.implementations.AutonomousConfiguration;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
-@Configurable
 public class FireControlSystem {
-    public static double baseVelocity = 2700, kVDist = 620, minVelocity = 3500;
-    public static double hoodBasePos = 0.53, kHoodDist = 0.1;
-    public static boolean useDepotPoseFallbackWhenTagNotVisible = true;
-    public static double alignedButLauncherOffHueDeg = 145.0;
-    public static double BLUE_DEPOT_X = 59, BLUE_DEPOT_Y = 57;
-    public static double RED_DEPOT_X = 59, RED_DEPOT_Y = -57;
-    public static double TURRET_TOLERANCE = 3;
     private final Turret turret;
     private final Hood hood;
     private final Launcher launcher;
@@ -34,7 +26,6 @@ public class FireControlSystem {
     private boolean turretAutoAimEnabled = true;
     private State state;
     private boolean runLauncher = false;
-    public static double maxVelocity = 5000;
     public static double bearingToDepot = 0;
     private boolean firing = false;
 
@@ -91,9 +82,12 @@ public class FireControlSystem {
                 if (turretAutoAimEnabled) {
                     setTurretTargetClosestFacing(turret.getCurrentPosition() + bearingToDepot);
                 }
-                hood.setTargetPosition(hoodBasePos + kHoodDist * depot.distanceXYToTagMeters());
+                hood.setTargetPosition(LiveMatchTuning.fcsHoodBasePosition + LiveMatchTuning.fcsHoodPositionPerMeter * depot.distanceXYToTagMeters());
                 if (runLauncher) {
-                    launcher.setTargetVelocity(Math.min(Math.max(baseVelocity + depot.distanceXYToTagMeters() * kVDist, minVelocity), maxVelocity));
+                    launcher.setTargetVelocity(Math.min(Math.max(
+                            LiveMatchTuning.fcsBaseVelocity + depot.distanceXYToTagMeters() * LiveMatchTuning.fcsVelocityPerMeter,
+                            LiveMatchTuning.fcsMinVelocity
+                    ), LiveMatchTuning.fcsMaxVelocity));
                 }
             } catch (IllegalStateException e) {
                 OpModeCore.getTelemetry().warning("Getting April Tag Bearing failed: " + e.getMessage());
@@ -109,7 +103,7 @@ public class FireControlSystem {
             } else if (firing) {
                 led.setPulseWidthMicros(1350);
             } else if (!runLauncher && turretAligned) {
-                led.setHue(alignedButLauncherOffHueDeg);
+                led.setHue(LiveMatchTuning.fcsAlignedButLauncherOffHueDeg);
             } else if(state != null) {
                 led.setColor(state.color);
             } else {
@@ -127,7 +121,7 @@ public class FireControlSystem {
     }
 
     public boolean isTurretAligned(){
-        return Math.abs(turret.getCurrentPosition() - turret.getDesiredTarget()) <= TURRET_TOLERANCE;
+        return Math.abs(turret.getCurrentPosition() - turret.getDesiredTarget()) <= LiveMatchTuning.fcsTurretToleranceDeg;
     }
 
     public boolean isLauncherRunning(){
@@ -179,7 +173,7 @@ public class FireControlSystem {
 
     private void aimTowardDepotPoseIfConfigured() {
         Pose targetDepotPose = getTargetDepotPose();
-        if (!useDepotPoseFallbackWhenTagNotVisible || driveBase == null || targetDepotPose == null) {
+        if (!LiveMatchTuning.fcsUseDepotPoseFallbackWhenTagNotVisible || driveBase == null || targetDepotPose == null) {
             return;
         }
 
@@ -195,8 +189,11 @@ public class FireControlSystem {
         if (turretAutoAimEnabled) {
             setTurretTargetClosestFacing(relativeBearingDeg);
         }
-        hood.setTargetPosition(hoodBasePos + kHoodDist * (Math.hypot(deltaX, deltaY)) / 39.37);
-        launcher.setTargetVelocity(Math.max(minVelocity, baseVelocity + kVDist * Math.hypot(deltaX, deltaY) / 39.37));
+        hood.setTargetPosition(LiveMatchTuning.fcsHoodBasePosition + LiveMatchTuning.fcsHoodPositionPerMeter * (Math.hypot(deltaX, deltaY)) / 39.37);
+        launcher.setTargetVelocity(Math.max(
+                LiveMatchTuning.fcsMinVelocity,
+                LiveMatchTuning.fcsBaseVelocity + LiveMatchTuning.fcsVelocityPerMeter * Math.hypot(deltaX, deltaY) / 39.37
+        ));
     }
 
     private Pose getTargetDepotPose() {
@@ -204,9 +201,9 @@ public class FireControlSystem {
             return depotPose;
         }
         if (allianceColor == MatchStateStore.AllianceColor.RED) {
-            return new Pose(RED_DEPOT_X, RED_DEPOT_Y);
+            return new Pose(LiveMatchTuning.redDepotX, LiveMatchTuning.redDepotY);
         }
-        return new Pose(BLUE_DEPOT_X, BLUE_DEPOT_Y);
+        return new Pose(LiveMatchTuning.blueDepotX, LiveMatchTuning.blueDepotY);
     }
 
     private SmartLimelight3A.AprilTag getAllianceDepotTag() {
@@ -225,8 +222,8 @@ public class FireControlSystem {
         double nearestFacing = selectClosestEquivalentAngle(
                 nominalFacingAngleDeg,
                 currentAngleDeg,
-                Turret.minAngle,
-                Turret.maxAngle
+                LiveMatchTuning.turretMinAngleDeg,
+                LiveMatchTuning.turretMaxAngleDeg
         );
         turret.setTargetPosition(nearestFacing);
     }

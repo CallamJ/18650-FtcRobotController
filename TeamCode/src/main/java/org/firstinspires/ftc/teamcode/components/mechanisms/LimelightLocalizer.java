@@ -1,28 +1,14 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
-import org.firstinspires.ftc.teamcode.components.subsystems.FireControlSystem;
 import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
-@Configurable
 public class LimelightLocalizer {
     private final SmartLimelight3A limelight;
     private Pose lastPose = new Pose(0, 0, 0);
     private Pose lastRelPose = new Pose(0, 0, 0);
     private String lastSolveStatus = "No solve yet";
-
-    /**
-     * The camera pose in the launcher frame, in inches/degrees.
-     * X is forward, Y is right, and heading is positive counter-clockwise from launcher forward.
-     */
-    public static double CAMERA_X = 0, CAMERA_Y = 0, CAMERA_Z = 0, CAMERA_HEADING = 0;
-
-    /**
-     * Known depot tag headings in the field frame, in degrees. These are configurable because the
-     * field position alone is not enough to solve the launcher's heading from one tag detection.
-     */
-    public static double BLUE_DEPOT_HEADING = -40, RED_DEPOT_HEADING = 40;
 
     private static final double INCHES_PER_METER = 39.37007874015748;
     private static final double MIN_TAG_RANGE_INCHES = 1.0;
@@ -63,14 +49,14 @@ public class LimelightLocalizer {
 
         lastRelPose = tagRelPose;
 
-        double tagFieldX = FireControlSystem.BLUE_DEPOT_X;
-        double tagFieldY = FireControlSystem.BLUE_DEPOT_Y;
-        double tagFieldHeading = BLUE_DEPOT_HEADING;
+        double tagFieldX = LiveMatchTuning.blueDepotX;
+        double tagFieldY = LiveMatchTuning.blueDepotY;
+        double tagFieldHeading = LiveMatchTuning.blueDepotHeadingDeg;
 
         if (tag.type() == SmartLimelight3A.AprilTag.Type.RED_DEPOT) {
-            tagFieldX = FireControlSystem.RED_DEPOT_X;
-            tagFieldY = FireControlSystem.RED_DEPOT_Y;
-            tagFieldHeading = RED_DEPOT_HEADING;
+            tagFieldX = LiveMatchTuning.redDepotX;
+            tagFieldY = LiveMatchTuning.redDepotY;
+            tagFieldHeading = LiveMatchTuning.redDepotHeadingDeg;
         }
 
         Pose tagFieldPose = new Pose(tagFieldX, tagFieldY, tagFieldHeading);
@@ -81,7 +67,14 @@ public class LimelightLocalizer {
     }
 
     public Pose getCameraPose() {
-        return new Pose(CAMERA_X, CAMERA_Y, CAMERA_Z, CAMERA_HEADING, 0, 0);
+        return new Pose(
+                LiveMatchTuning.limelightLocalizerCameraX,
+                LiveMatchTuning.limelightLocalizerCameraY,
+                LiveMatchTuning.limelightLocalizerCameraZ,
+                LiveMatchTuning.limelightLocalizerCameraHeadingDeg,
+                0,
+                0
+        );
     }
 
     public String getLastSolveStatus() {

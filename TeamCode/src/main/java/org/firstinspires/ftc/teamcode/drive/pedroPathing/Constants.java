@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.drive.pedroPathing;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.drivetrains.Mecanum;
@@ -14,7 +13,6 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 
-@Configurable
 public class Constants {
     public static double DEFAULT_MAX_POWER = 1.0;
 

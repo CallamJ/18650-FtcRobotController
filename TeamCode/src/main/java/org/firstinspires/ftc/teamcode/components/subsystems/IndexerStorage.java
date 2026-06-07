@@ -1,21 +1,15 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
 import org.firstinspires.ftc.teamcode.hardware.ScoringElementColor;
 import org.firstinspires.ftc.teamcode.hardware.SmartColorSensor;
 import org.firstinspires.ftc.teamcode.hardware.SmartLEDIndicator;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
 import java.util.Arrays;
 
-@Configurable
 public class IndexerStorage {
-    public static int requiredConsecutiveContentReads = 1;
-    public static double frontSensorMinDistance = 38;
-    public static double GREEN_HUE = 159.0;
-    public static double PURPLE_HUE = 170.0;
-
     public enum SlotContent {
         OPEN,
         GREEN,
@@ -73,8 +67,8 @@ public class IndexerStorage {
     }
 
     public String getFrontClosestColorMatch() {
-        double greenDist = Math.abs(getFrontSensorHue() - GREEN_HUE);
-        double purpleDist = Math.abs(getFrontSensorHue() - PURPLE_HUE);
+        double greenDist = Math.abs(getFrontSensorHue() - LiveMatchTuning.greenHue);
+        double purpleDist = Math.abs(getFrontSensorHue() - LiveMatchTuning.purpleHue);
 
         if (greenDist < purpleDist) {
             return "ARTIFACT_GREEN";
@@ -115,7 +109,7 @@ public class IndexerStorage {
     }
 
     public boolean isFrontFull(){
-        return frontColorSensor.getDistance(DistanceUnit.MM) < frontSensorMinDistance;
+        return frontColorSensor.getDistance(DistanceUnit.MM) < LiveMatchTuning.frontSensorMinDistance;
     }
 
     public void updateIndexerContent() {
@@ -130,7 +124,7 @@ public class IndexerStorage {
             frontDetectionStreak = 1;
         }
 
-        if (frontDetectionStreak < Math.max(1, requiredConsecutiveContentReads)) {
+        if (frontDetectionStreak < Math.max(1, LiveMatchTuning.requiredConsecutiveContentReads)) {
             return;
         }
 
