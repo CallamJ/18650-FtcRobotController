@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
@@ -25,9 +24,9 @@ import org.firstinspires.ftc.teamcode.hardware.SmartLimelight3A;
 import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
 import org.firstinspires.ftc.teamcode.utilities.Direction;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 
-@Configurable
 @TeleOp(name = "1 - Main TeleOp")
 public class MainTeleOp extends TeleOpCore {
     protected static DriveBase driveBase;
@@ -50,22 +49,22 @@ public class MainTeleOp extends TeleOpCore {
     protected DataFilter tickTimeFilter = new RollingAverage(10);
 
 
-    public static double launchVelocity = 2150;
-    public static boolean runFCS = true;
-    public static double matchStateFreshnessMs = 10000;
-    public static double matchStateSaveIntervalMs = 500;
-    public static double teleOpFollowerMaxPower = 1.0;
-    public static MatchStateStore.AllianceColor defaultAllianceColor = MatchStateStore.AllianceColor.BLUE;
-    public static double indexerZeroBumpTicksPerTriggerUnit = 20.0;
-    public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
-    public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
-    public static double maintenancePoseTrimInchesPerTouchpadUnit = 12.0;
-    private MatchStateStore.AllianceColor allianceColor = defaultAllianceColor;
+    private static final SmartLEDIndicator.IndicatorColor TURRET_ZERO_TRIM_LED_COLOR = SmartLEDIndicator.IndicatorColor.INDIGO;
+    private static final SmartLEDIndicator.IndicatorColor MANUAL_AIM_LED_COLOR = SmartLEDIndicator.IndicatorColor.YELLOW;
+    private MatchStateStore.AllianceColor allianceColor = defaultAllianceColor();
     private MatchStateStore.Snapshot startupSnapshot;
     private boolean loadedFreshSnapshot = false;
     private long lastMatchStateSaveMs = 0;
+    private long lastManualAimUpdateMs = 0;
     private TeleOpTaskManager teleOpTaskManager;
-    public static boolean clearLeftSlotWhenFeederReturns = false;
+    private boolean manualAimMode = false;
+    private double manualAimTargetDeg = 0;
+    private static MatchStateStore.AllianceColor defaultAllianceColor() {
+        return MatchStateStore.parseAllianceColor(
+                LiveMatchTuning.defaultAllianceColor,
+                MatchStateStore.AllianceColor.BLUE
+        );
+    }
 
     private static void resetSubsystemReferences() {
         if (limelight != null) {
@@ -97,15 +96,18 @@ public class MainTeleOp extends TeleOpCore {
     protected void onInitialize(){
         //noinspection DuplicatedCode
         resetSubsystemReferences();
-        startupSnapshot = MatchStateStore.getFreshSnapshot(Math.max(1000L, (long) matchStateFreshnessMs));
+        MatchStateStore.AllianceColor defaultAllianceColor = defaultAllianceColor();
+        startupSnapshot = MatchStateStore.getFreshSnapshot(Math.max(1000L, (long) LiveMatchTuning.matchStateFreshnessMs));
         allianceColor = startupSnapshot != null
                 ? MatchStateStore.parseAllianceColor(startupSnapshot.allianceColor, defaultAllianceColor)
                 : defaultAllianceColor;
         loadedFreshSnapshot = startupSnapshot != null;
         lastMatchStateSaveMs = 0;
+        lastManualAimUpdateMs = System.currentTimeMillis();
         teleOpTaskManager = null;
-        clearLeftSlotWhenFeederReturns = false;
-        runFCS = true;
+        manualAimMode = false;
+        manualAimTargetDeg = 0;
+        LiveMatchTuning.runTeleOpFcs = true;
 
         DriveBaseMotorConfig.DriveBaseMotorConfigBuilder configBuilder = new DriveBaseMotorConfig.DriveBaseMotorConfigBuilder();
         configBuilder.leftFront("LFront", Direction.FORWARD);
@@ -113,7 +115,7 @@ public class MainTeleOp extends TeleOpCore {
         configBuilder.rightFront("RFront", Direction.REVERSE);
         configBuilder.rightRear("RRear", Direction.FORWARD);
 
-        Constants.setMecanumMaxPower(teleOpFollowerMaxPower);
+        Constants.setMecanumMaxPower(LiveMatchTuning.teleOpFollowerMaxPower);
 
         try {
             feedWheels = new FeedWheels(
@@ -163,6 +165,7 @@ public class MainTeleOp extends TeleOpCore {
                     null
             );
             fcs.setAllianceColor(allianceColor);
+            fcs.setTurretAutoAimEnabled(!manualAimMode);
         } catch (Exception e) {
             prettyTelem.error("Fire Control System failed to initialize, skipping: " + e.getMessage());
         }
@@ -221,9 +224,9 @@ public class MainTeleOp extends TeleOpCore {
         double driveX = -gamepad1.leftStickX;
         double driveY = -gamepad1.leftStickY;
         double driveTurn = -gamepad1.rightStickX;
-        boolean hasDriverOverrideInput = Math.abs(driveX) > TeleOpTaskManager.driverOverrideDeadband
-                || Math.abs(driveY) > TeleOpTaskManager.driverOverrideDeadband
-                || Math.abs(driveTurn) > TeleOpTaskManager.driverOverrideDeadband;
+        boolean hasDriverOverrideInput = Math.abs(driveX) > LiveMatchTuning.driverOverrideDeadband
+                || Math.abs(driveY) > LiveMatchTuning.driverOverrideDeadband
+                || Math.abs(driveTurn) > LiveMatchTuning.driverOverrideDeadband;
 
         boolean turretTrimActive = false;
 
@@ -247,12 +250,17 @@ public class MainTeleOp extends TeleOpCore {
             if (gamepad1.leftStickButtonPressed()) {
                 resetTurretZeroToCurrent();
             }
+            if (gamepad1.xPressed()) {
+                toggleManualAimMode();
+            }
             turretTrimActive |= applyZeroTrim(gamepad1);
             applyMaintenanceTouchpadPoseTrim(gamepad1);
             applyTurretTrimLedOverride(turretTrimActive);
 
             return;
         }
+        applyManualAimControl(gamepad1);
+        lastManualAimUpdateMs = System.currentTimeMillis();
         applyTurretTrimLedOverride(turretTrimActive);
 
         if (teleOpTaskManager != null) {
@@ -365,11 +373,11 @@ public class MainTeleOp extends TeleOpCore {
             volleyStorageManager.tick();
         }
 
-        if(fcs != null && runFCS){
+        if(fcs != null && LiveMatchTuning.runTeleOpFcs){
             try {
                 fcs.tick();
             } catch (Exception e) {
-                runFCS = false;
+                LiveMatchTuning.runTeleOpFcs = false;
                 String message = e.getMessage();
                 prettyTelem.error("FCS tick failed; disabling FCS. " +
                         e.getClass().getSimpleName() +
@@ -389,8 +397,6 @@ public class MainTeleOp extends TeleOpCore {
                 driveBase.getFollower().updatePose();
             }
         }
-
-        persistMatchStateIfDue(false);
     }
 
     private void applyPersistedPoseIfAvailable() {
@@ -426,7 +432,7 @@ public class MainTeleOp extends TeleOpCore {
 
     private void persistMatchStateIfDue(boolean force) {
         long now = System.currentTimeMillis();
-        long intervalMs = Math.max(100L, (long) matchStateSaveIntervalMs);
+        long intervalMs = Math.max(100L, (long) LiveMatchTuning.teleOpMatchStateSaveIntervalMs);
         if (!force && now - lastMatchStateSaveMs < intervalMs) {
             return;
         }
@@ -466,8 +472,10 @@ public class MainTeleOp extends TeleOpCore {
                 .addData("Power", () -> launcher == null ? "n/a" : launcher.getPower())
                 .addData("PID Result", () -> launcher == null ? "n/a" : launcher.getPidResult());
         prettyTelem.addLine("Turret")
+                .addData("Aim Mode", () -> manualAimMode ? "MANUAL" : "AUTO")
                 .addData("Current Angle", () -> turret == null ? "n/a" : turret.getCurrentPosition())
                 .addData("Target Angle", () -> turret == null ? "n/a" : turret.getTargetPosition())
+                .addData("Manual Target", () -> manualAimMode ? manualAimTargetDeg : "n/a")
                 .addData("Power", () -> turret == null ? "n/a" : turret.getPower())
                 .addData("Bearing To Tag", () -> FireControlSystem.bearingToDepot);
         prettyTelem.addLine("Storage Controller")
@@ -508,7 +516,42 @@ public class MainTeleOp extends TeleOpCore {
         }
         turret.setCurrentAsZero();
         turret.setTargetPosition(0);
+        manualAimTargetDeg = 0;
         persistMatchStateIfDue(true);
+    }
+
+    private void toggleManualAimMode() {
+        manualAimMode = !manualAimMode;
+        if (turret != null) {
+            manualAimTargetDeg = manualAimMode ? turret.getTargetPosition() : 0;
+            if (manualAimMode) {
+                turret.setTargetPosition(manualAimTargetDeg);
+            }
+        }
+        if (fcs != null) {
+            fcs.setTurretAutoAimEnabled(!manualAimMode);
+        }
+        lastManualAimUpdateMs = System.currentTimeMillis();
+    }
+
+    private void applyManualAimControl(SmartGamepad gamepad) {
+        if (!manualAimMode || turret == null) {
+            lastManualAimUpdateMs = System.currentTimeMillis();
+            return;
+        }
+
+        long nowMs = System.currentTimeMillis();
+        double elapsedSec = Math.max(0, (nowMs - lastManualAimUpdateMs) / 1000.0);
+        lastManualAimUpdateMs = nowMs;
+
+        double input = gamepad.rightTrigger - gamepad.leftTrigger;
+        if (Math.abs(input) <= LiveMatchTuning.manualAimStickDeadband) {
+            return;
+        }
+
+        manualAimTargetDeg += input * LiveMatchTuning.manualAimDegreesPerSecond * elapsedSec;
+        turret.setTargetPosition(manualAimTargetDeg);
+        manualAimTargetDeg = turret.getTargetPosition();
     }
 
     private boolean applyZeroTrim(SmartGamepad gamepad) {
@@ -519,7 +562,7 @@ public class MainTeleOp extends TeleOpCore {
         double triggerDelta = gamepad.rightTrigger - gamepad.leftTrigger;
         if (gamepad.leftBumper && turret != null) {
             if (Math.abs(triggerDelta) > 1e-6) {
-                int turretBump = (int) (triggerDelta * turretZeroBumpTicksPerTriggerUnit);
+                int turretBump = (int) (triggerDelta * LiveMatchTuning.turretZeroBumpTicksPerTriggerUnit);
                 if (turretBump != 0) {
                     turret.bumpZero(turretBump);
                 }
@@ -532,7 +575,7 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         if (indexer != null) {
-            int indexerBump = (int) (triggerDelta * indexerZeroBumpTicksPerTriggerUnit);
+            int indexerBump = (int) (triggerDelta * LiveMatchTuning.indexerZeroBumpTicksPerTriggerUnit);
             if (indexerBump != 0) {
                 indexer.bumpZero(indexerBump);
             }
@@ -544,7 +587,13 @@ public class MainTeleOp extends TeleOpCore {
         if (fcs == null) {
             return;
         }
-        fcs.setLedOverrideColor(turretTrimActive ? turretZeroTrimLedColor : null);
+        if (turretTrimActive) {
+            fcs.setLedOverrideColor(TURRET_ZERO_TRIM_LED_COLOR);
+        } else if (manualAimMode) {
+            fcs.setLedOverrideColor(MANUAL_AIM_LED_COLOR);
+        } else {
+            fcs.setLedOverrideColor(null);
+        }
     }
 
     private void applyMaintenanceTouchpadPoseTrim(SmartGamepad gamepad) {
@@ -559,7 +608,7 @@ public class MainTeleOp extends TeleOpCore {
         }
 
         com.pedropathing.geometry.Pose currentPose = driveBase.getFollower().getPose();
-        double trimScale = maintenancePoseTrimInchesPerTouchpadUnit;
+        double trimScale = LiveMatchTuning.maintenancePoseTrimInchesPerTouchpadUnit;
         double newX = currentPose.getX() + (deltaX * trimScale);
         double newY = currentPose.getY() - (deltaY * trimScale);
 

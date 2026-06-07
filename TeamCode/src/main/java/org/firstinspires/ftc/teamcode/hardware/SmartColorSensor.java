@@ -2,21 +2,16 @@ package org.firstinspires.ftc.teamcode.hardware;
 
 import android.graphics.Color;
 import androidx.annotation.NonNull;
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
 import com.qualcomm.robotcore.hardware.NormalizedRGBA;
 import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.jetbrains.annotations.NotNull;
 
-@Configurable
 public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching, ScoringColorSensor, WrappedDevice<NormalizedColorSensor> {
-    public static int HSV_HUE_FILTER_WINDOW = 0;
-    public static int HSV_SATURATION_FILTER_WINDOW = 0;
-    public static int HSV_VALUE_FILTER_WINDOW = 0;
-
     private final NormalizedColorSensor colorSensor;
     private final HardwareCache<NormalizedRGBA> colorCache;
     private final HardwareCache<HsvReading> hsvCache;
@@ -227,9 +222,9 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
     }
 
     private void syncConfiguredFilters() {
-        int hueWindow = Math.max(0, HSV_HUE_FILTER_WINDOW);
-        int saturationWindow = Math.max(0, HSV_SATURATION_FILTER_WINDOW);
-        int valueWindow = Math.max(0, HSV_VALUE_FILTER_WINDOW);
+        int hueWindow = Math.max(0, LiveMatchTuning.colorSensorHueFilterWindow);
+        int saturationWindow = Math.max(0, LiveMatchTuning.colorSensorSaturationFilterWindow);
+        int valueWindow = Math.max(0, LiveMatchTuning.colorSensorValueFilterWindow);
 
         if (hueWindow != appliedHueFilterWindow) {
             hueFilter = hueWindow == 0 ? DataFilter.NONE : new RollingAverage(hueWindow);

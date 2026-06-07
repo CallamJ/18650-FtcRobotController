@@ -1,15 +1,14 @@
 package org.firstinspires.ftc.teamcode.components.subsystems;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Collector;
 import org.firstinspires.ftc.teamcode.components.mechanisms.Indexer;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
 import java.util.ArrayDeque;
 import java.util.Objects;
 import java.util.Queue;
 
-@Configurable
 public class VolleyFireStorageManager {
     private final FeedSystem feeder;
     private final Indexer indexer;
@@ -19,15 +18,9 @@ public class VolleyFireStorageManager {
     private State state;
     private long lastFireIndex = 0;
     private final ElapsedTime firePrepareTimer = new ElapsedTime();
-    public static double FIRE_PREPARE_TIME_MS = 250;
-    public static double FIRE_END_TIME_MS = 350;
     private final FireControlSystem fcs;
 
     // jam correcting
-        public static boolean JAM_CORRECTING_ENABLED = true;
-        public static double JAM_CORRECTING_TIME_THRESHOLD = 300;
-        public static double JAM_CORRECTING_VELOCITY_THRESHOLD = 25;
-        public static double JAM_CORRECTING_TIME_MS = 1000;
         private boolean isJamCorrecting = false;
         private long lastTarget = 0;
         private final ElapsedTime jamTimer = new ElapsedTime(), activeJamTimer = new ElapsedTime();;
@@ -57,11 +50,11 @@ public class VolleyFireStorageManager {
         indexer.tick();
         indexerStorage.tick();
 
-        if(JAM_CORRECTING_ENABLED){
+        if(LiveMatchTuning.volleyJamCorrectingEnabled){
             checkForIndexerJam();
         }
 
-        if (isJamCorrecting && (!indexer.isBusy() || activeJamTimer.milliseconds() > JAM_CORRECTING_TIME_MS)) {
+        if (isJamCorrecting && (!indexer.isBusy() || activeJamTimer.milliseconds() > LiveMatchTuning.volleyJamCorrectingTimeMs)) {
             isJamCorrecting = false;
             indexer.setTargetIndex(lastTarget);
             return;
@@ -106,7 +99,7 @@ public class VolleyFireStorageManager {
             } break;
 
             case ENGAGING_FEEDER: {
-                if(firePrepareTimer.milliseconds() > FIRE_PREPARE_TIME_MS){
+                if(firePrepareTimer.milliseconds() > LiveMatchTuning.volleyFirePrepareTimeMs){
                     indexerStorage.dropFreshFlag();
                     state = State.FIRING;
                     lastFireIndex = indexer.getCurrentIndex();
@@ -129,7 +122,7 @@ public class VolleyFireStorageManager {
             } break;
 
             case ENDING_FIRING: {
-                if(firePrepareTimer.milliseconds() > FIRE_END_TIME_MS){
+                if(firePrepareTimer.milliseconds() > LiveMatchTuning.volleyFireEndTimeMs){
                     state = State.RESTING;
                     feeder.stopFeeding();
                     fcs.setFiring(false);
@@ -139,8 +132,8 @@ public class VolleyFireStorageManager {
     }
 
     private void checkForIndexerJam() {
-        if (indexer.isBusy() && Math.abs(indexer.getVelocity()) <= JAM_CORRECTING_VELOCITY_THRESHOLD && !isJamCorrecting) {
-            if (jamTimer.milliseconds() > JAM_CORRECTING_TIME_THRESHOLD) {
+        if (indexer.isBusy() && Math.abs(indexer.getVelocity()) <= LiveMatchTuning.volleyJamCorrectingVelocityThreshold && !isJamCorrecting) {
+            if (jamTimer.milliseconds() > LiveMatchTuning.volleyJamCorrectingTimeThresholdMs) {
                 jamTimer.reset();
                 activeJamTimer.reset();
                 lastTarget = indexer.getTargetIndex();

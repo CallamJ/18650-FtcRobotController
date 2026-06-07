@@ -2,9 +2,9 @@ package org.firstinspires.ftc.teamcode.hardware;
 
 import android.util.Size;
 import androidx.annotation.NonNull;
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.hardware.filters.DataFilter;
 import org.firstinspires.ftc.teamcode.hardware.filters.RollingAverage;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.opencv.ImageRegion;
 import org.firstinspires.ftc.vision.opencv.PredominantColorProcessor;
@@ -15,17 +15,12 @@ import java.util.Arrays;
  * Wraps a SmartCamera + PredominantColorProcessor so a camera can be used like a color sensor.
  * Provides both the SDK swatch match and SmartColorSensor HSV-based scoring color match.
  */
-@Configurable
 public class SmartCameraColorSensor extends Device implements AutoCloseable, ScoringColorSensor {
-    public static int HSV_HUE_FILTER_WINDOW = 0;
-    public static int HSV_SATURATION_FILTER_WINDOW = 0;
-    public static int HSV_VALUE_FILTER_WINDOW = 0;
-
     private static final PredominantColorProcessor.Swatch[] DEFAULT_SWATCHES = {
             PredominantColorProcessor.Swatch.ARTIFACT_GREEN,
             PredominantColorProcessor.Swatch.ARTIFACT_PURPLE
     };
-    public static ImageRegion DEFAULT_ROI = ImageRegion.asUnityCenterCoordinates(-0.6, 0.6, 0.6, -0.6);
+    private static final ImageRegion DEFAULT_ROI = ImageRegion.asUnityCenterCoordinates(-0.6, 0.6, 0.6, -0.6);
 
     private final SmartCamera camera;
     private final ColorMatchConfig.ColorMatchProfile colorProfile;
@@ -172,9 +167,9 @@ public class SmartCameraColorSensor extends Device implements AutoCloseable, Sco
     }
 
     private void syncConfiguredFilters() {
-        int hueWindow = Math.max(0, HSV_HUE_FILTER_WINDOW);
-        int saturationWindow = Math.max(0, HSV_SATURATION_FILTER_WINDOW);
-        int valueWindow = Math.max(0, HSV_VALUE_FILTER_WINDOW);
+        int hueWindow = Math.max(0, LiveMatchTuning.cameraColorSensorHueFilterWindow);
+        int saturationWindow = Math.max(0, LiveMatchTuning.cameraColorSensorSaturationFilterWindow);
+        int valueWindow = Math.max(0, LiveMatchTuning.cameraColorSensorValueFilterWindow);
 
         if (hueWindow != appliedHueFilterWindow) {
             hueFilter = hueWindow == 0 ? DataFilter.NONE : new RollingAverage(hueWindow);

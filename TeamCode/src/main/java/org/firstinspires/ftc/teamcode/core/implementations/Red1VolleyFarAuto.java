@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.core.implementations;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -12,7 +11,6 @@ import org.firstinspires.ftc.teamcode.utilities.MatchStateStore;
 import java.util.ArrayList;
 import java.util.List;
 
-@Configurable
 @Autonomous(name = "2 - Red 1 Volley Far")
 public class Red1VolleyFarAuto extends AutoOpBase {
     public static double START_X = -60.9;

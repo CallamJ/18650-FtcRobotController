@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.pedropathing.Drivetrain;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.drivetrains.Mecanum;
@@ -11,15 +10,11 @@ import org.firstinspires.ftc.teamcode.drive.DriveBaseMotorConfig;
 import org.firstinspires.ftc.teamcode.drive.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.utilities.Pose;
 
-@Configurable
 public class DriveBase {
 
     private final Drivetrain drivetrain;
     private final Localizer localizer;
     private Follower follower;
-    public static float TRANSLATIONAL_VELOCITY_MULTIPLIER = 40f;
-    public static float HEADING_VELOCITY_MULTIPLIER = 3f;
-
     private double powerFactor = 1;
 
     public static DriveMotorPosition zeroIndex = DriveMotorPosition.LEFT_FRONT;

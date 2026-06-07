@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode.components.mechanisms;
 
-import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.CRServo;
+import org.firstinspires.ftc.teamcode.utilities.LiveMatchTuning;
 
-@Configurable
 public class FeedWheels {
     private final CRServo leftServo, rightServo;
-    public static double power = 1;
 
     public FeedWheels(CRServo leftServo, CRServo rightServo) {
         this.leftServo = leftServo;
@@ -14,8 +12,8 @@ public class FeedWheels {
     }
 
     public void start(){
-        leftServo.setPower(power);
-        rightServo.setPower(power);
+        leftServo.setPower(LiveMatchTuning.feedWheelPower);
+        rightServo.setPower(LiveMatchTuning.feedWheelPower);
     }
 
     public void stop(){

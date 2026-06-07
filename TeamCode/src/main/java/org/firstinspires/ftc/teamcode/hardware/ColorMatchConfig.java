@@ -1,12 +1,10 @@
 package org.firstinspires.ftc.teamcode.hardware;
 
-import com.bylazar.configurables.annotations.Configurable;
 import org.firstinspires.ftc.teamcode.utilities.PersistentStorage;
 
 /**
  * Front color sensor profile used by all scoring color matching.
  */
-@Configurable
 public class ColorMatchConfig {
     private static final String PERSISTENCE_KEY = "color_match_profiles_front_v2";
     private static boolean persistedConfigLoaded = false;

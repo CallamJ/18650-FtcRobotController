@@ -60,7 +60,7 @@
 - `TeleOpCore` snapshots initial gamepad state through framework pre-init plumbing, not through subclass `super.onInitialize()` calls.
 - `Hardware` is now per-opmode, not global static state. Do not reintroduce the old `Hardware.init(...)` mental model.
 - Several opmodes keep subsystem references in static fields and explicitly reset them on init. That is intentional protection against stale state across FTC opmode reruns.
-- `@Configurable` is an annotation used on classes to expose `public static` tuning fields at runtime from the Control Hub web interface. These fields are live development surfaces and often matter more than hard-coded defaults in the file.
+- `utilities/LiveMatchTuning.java` is the only intended `@Configurable` surface. Keep it scalar-only and match-facing; do not add `@Configurable` back to mechanisms, subsystems, autos, or classes with complex object fields unless the Sloth patch-application cost has been reconsidered.
 
 ## Active Control Surfaces
 
@@ -70,6 +70,8 @@
   Source of truth for how autonomous initialization, firing readiness, obelisk acquisition assist, and path-step execution currently work.
 - `drive/pedroPathing/Constants.java`
   Shared follower and drivetrain tuning that affects both teleop follower-assisted behavior and autonomous.
+- `utilities/LiveMatchTuning.java`
+  Runtime Control Hub tuning for current match-facing scalar values. Autonomous path/plan constants are code-patched rather than exposed as live configurables.
 
 ## State Machines And Coordinators
 
