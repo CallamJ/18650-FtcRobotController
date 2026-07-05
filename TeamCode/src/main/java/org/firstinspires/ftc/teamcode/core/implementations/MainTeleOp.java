@@ -69,7 +69,6 @@ public class MainTeleOp extends TeleOpCore {
     public static double turretZeroBumpTicksPerTriggerUnit = -200.0;
     public static SmartLEDIndicator.IndicatorColor turretZeroTrimLedColor = SmartLEDIndicator.IndicatorColor.INDIGO;
     public static double maintenancePoseTrimInchesPerTouchpadUnit = 12.0;
-    private MatchStateStore.AllianceColor allianceColor = defaultAllianceColor;
     private MatchStateStore.Snapshot startupSnapshot;
     private boolean loadedFreshSnapshot = false;
     private long lastMatchStateSaveMs = 0;
@@ -123,7 +122,6 @@ public class MainTeleOp extends TeleOpCore {
         lastMatchStateSaveMs = 0;
         lastManualAimUpdateMs = System.currentTimeMillis();
         teleOpTaskManager = null;
-        clearLeftSlotWhenFeederReturns = false;
         runFCS = true;
         tickTimeAverage = new RollingAverage(10);
         tickTimePercentiles = new RollingPercentileWindow(Math.max(1, tickTimePercentileWindow));
