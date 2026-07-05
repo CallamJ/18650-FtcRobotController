@@ -177,9 +177,6 @@ public class MainTeleOp extends TeleOpCore {
             limelight.setPipeline(0);
             limelight.start();
 
-            prettyTelem.addLine("lime light")
-                    .addData("limelight results", limelight::getAprilTags);
-
             fcs = new FireControlSystem(
                     turret,
                     hood,
