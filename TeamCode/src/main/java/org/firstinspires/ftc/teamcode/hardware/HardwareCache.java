@@ -13,7 +13,6 @@ public class HardwareCache<T> implements Caching {
     private boolean cacheValid = false;
     private Strategy strategy = Strategy.UPDATE_WHEN_INVALIDATED;
     private final Supplier<T> valueSupplier;
-    private boolean cacheRead = false;
 
     /**
      * Constructs a HardwareCache with a given value supplier.
@@ -36,8 +35,6 @@ public class HardwareCache<T> implements Caching {
         } else {
             this.cacheValid = false;
         }
-
-        cacheRead = false;
     }
 
     /**
@@ -47,7 +44,6 @@ public class HardwareCache<T> implements Caching {
     public void updateCache() {
         this.cachedValue = valueSupplier.get();
         cacheValid = true;
-        cacheRead = false;
     }
 
     /**
@@ -56,25 +52,12 @@ public class HardwareCache<T> implements Caching {
      * @return The latest cached value.
      */
     public T read() {
-        if (cachedValue == null || !cacheValid) {
+        if (!cacheValid || strategy == Strategy.ALWAYS_UPDATE) {
             updateCache();
         }
 
-        switch (strategy) {
-            case UPDATE_WHEN_INVALIDATED:
-            case VALID_UNTIL_INVALIDATED:
-                cacheRead = true;
-                return cachedValue;
-            case INVALID_AFTER_FIRST_READ:
-                if (cacheRead) {
-                    updateCache();
-                } else {
-                    cacheRead = true;
-                }
-                return cachedValue;
-            case ALWAYS_UPDATE:
-                updateCache();
-                return cachedValue;
+        if(strategy == Strategy.INVALID_AFTER_FIRST_READ){
+            invalidateCache();
         }
 
         return cachedValue;
@@ -97,7 +80,6 @@ public class HardwareCache<T> implements Caching {
     public void setStrategy(Strategy strategy) {
         this.strategy = strategy;
         cacheValid = false;
-        cacheRead = false;
     }
 
     /**

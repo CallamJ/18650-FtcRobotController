@@ -21,14 +21,18 @@
   Lifecycle and opmode framework.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/core/implementations/`
   Real opmodes. This is where current robot behavior is easiest to understand.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/`
+  Shared building blocks above raw devices: `ActuatorComponent` and the `*AxisComponent` family (`MotorAxisComponent`, `MotorPositionAxisComponent`, `MotorVelocityAxisComponent`, `PositionAxisComponent`, `VelocityAxisComponent`).
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/mechanisms/`
-  Low-level robot mechanisms such as `DriveBase`, `Turret`, `Launcher`, `Indexer`, `Collector`, `FeedRamp`, and `FeedWheels`.
+  Low-level robot mechanisms: `DriveBase`, `Turret`, `Launcher`, `Hood`, `Indexer`, `Collector`, `FeedRamp`, `FeedWheels`, `LimelightLocalizer`.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/components/subsystems/`
   Coordination layers that sit above mechanisms, especially storage and firing logic.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/hardware/`
-  Smart FTC hardware wrappers, cache management, and sensor configuration.
+  Smart FTC hardware wrappers, cache management, and sensor configuration. Includes `hardware/controllers/` (PID family: `PID`, `DirectionalPID`, `VelocityPID`, `GravityPID`, `BangBangController`, `HybridController`) and `hardware/filters/` (`DataFilter`, `RollingAverage`).
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/drive/`
   Drive configuration and Pedro Pathing constants.
+- `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/vision/`
+  AprilTag readers (`AprilTagReader`, `MultiAprilTagReader`) and `Detection` types used by aiming/localization.
 - `TeamCode/src/main/java/org/firstinspires/ftc/teamcode/utilities/`
   Persistent storage, match-state carryover, telemetry helpers, and small support types.
 - `FtcRobotController/`
@@ -52,7 +56,7 @@
 ## Key Non-Obvious Contracts
 
 - `OpModeCore.frameworkTick()` invalidates hardware caches every loop through `hardware.invalidateCaches()`. Hardware wrappers depend on that refresh cycle.
-- Methods beginning with `on` in the opmode framework are intended to be true hooks. Implementers should not need to call `super.on...()` in normal usage.
+- Methods beginning with `on` in the opmode framework are hooks. The intended API convention is that hooks do **not** require a `super.on...()` call — `OpModeCore` and `TeleOpCore` deliberately route core setup through framework pre-init plumbing so subclasses never have to chain. `AutoOpBase.onInitialize` currently *violates* that convention: it runs substantive setup (alliance color, drive-base motor config, Limelight init, obelisk-assist state, telemetry plumbing) directly in the hook, so today an auto subclass that overrides it without calling `super.onInitialize()` silently strips that setup. This is a wart, not a pattern to emulate: the durable fix is to move that setup into pre-init plumbing so the super-call requirement disappears, and **do not** add new hooks that require subclasses to chain `super`. Until then, auto subclasses still must call `super.onInitialize()`. When in doubt, read the parent's hook body first.
 - `TeleOpCore` snapshots initial gamepad state through framework pre-init plumbing, not through subclass `super.onInitialize()` calls.
 - `Hardware` is now per-opmode, not global static state. Do not reintroduce the old `Hardware.init(...)` mental model.
 - Several opmodes keep subsystem references in static fields and explicitly reset them on init. That is intentional protection against stale state across FTC opmode reruns.
@@ -145,6 +149,19 @@
 - Do not assume a file is current just because it is widely referenced. Some legacy files remain in support of older wrappers, tuning tools, or unfinished migrations.
 - Prefer caller-driven truth over old helper classes that look authoritative but are no longer the main path.
 
+## Repo-Specific Failure Patterns
+
+Failure modes attested by this codebase's commit history. Listed for use as a pre-flight checklist on reviews and edits. Add a new pattern only when the git log supports it; otherwise it's general judgment, not a documented pattern.
+
+- **State-machine cleanup omissions.** Multiple historical fixes have addressed transitions that didn't clear `activeTask`, didn't reset slot content after firing, missed a `break` in a switch arm, missed an `else` for a load-task with nothing to load, or chose a state without triggering its required side effect (e.g., `feeder.trigger()` skipped on a direct-load path). When editing `VolleyFireStorageManager`, `FireControlSystem`, or the auto plan runner, audit each transition for cleanup completeness and side-effect symmetry. Witnessed: `f1062cf`, `990855a`.
+- **Hardware cache correctness.** Recent fixes around the per-loop cache flow have addressed: ordering between Lynx bulk cache clear and per-device cache invalidation, treating `null` as "uncached" (it's a valid cached value, not a sentinel for empty), HSV/distance recomputed per call so two same-loop reads disagreed, and caches not being invalidated when their inputs (filter config) changed. When editing `Hardware`, `HardwareCache`, or any `Smart*` sensor wrapper, verify all four. Witnessed: `1b568fe`, `1225776`.
+- **Refactors that silently drop real-world calibration.** A hotfix was needed to re-add a potentiometer offset that a refactor had removed from the device-construction signature. The compiler does not catch this; only the robot does. When changing constructors, factory methods, or builders for hardware wrappers, audit every call site for parameters that carry calibration values. Witnessed: `a667b9a`.
+- **Auto subclasses overriding `onInitialize` without `super`.** `AutoOpBase.onInitialize` runs substantive setup (alliance, drive config, limelight, telemetry, obelisk state) directly in the hook, so an auto subclass that overrides it without chaining `super.onInitialize()` silently strips that setup. Six subclasses had this bug; a fix added `super.onInitialize()` to all of them (`ff42101`). The lesson is **not** "remember to call super" — it's that this hook shouldn't require super at all (it's the lone deviation from the repo's hook convention; see *Key Non-Obvious Contracts*). Until `AutoOpBase` is refactored, audit auto subclasses for the missing super call, and don't add new super-requiring hooks.
+
+A separate framework convention worth preserving even though no historical fix attests it directly:
+
+- **Per-opmode reset of static subsystem fields.** Several opmodes hold subsystem references as `static` and explicitly reset them on init. The convention is the design — the absence of fix commits in this category suggests it's working. Removing the resets would reintroduce stale-state-across-opmode-reruns as a real failure mode.
+
 ## Editing Guidance
 
 - Preserve Callam's control of architecture unless the requested task clearly requires structural change.
@@ -152,13 +169,32 @@
 - If you change initialization order, cached hardware behavior, persisted keys, or supplier-based task wiring, explain the behavioral impact explicitly.
 - Do not "clean up" implicit persistence or control-handoff behavior unless you can describe what user-visible behavior replaces it.
 
+## Toolchain And Dependencies
+
+- Gradle modules are `:FtcRobotController` (Android library, vendored upstream) and `:TeamCode` (Android application, depends on `:FtcRobotController`). Package root is `org.firstinspires.ftc.teamcode`; app id is `com.qualcomm.ftcrobotcontroller`.
+- Android Gradle Plugin 8.7.0, `compileSdk` 35 (TeamCode) / 34 (FtcRobotController), `minSdk` 24, Java 8 source/target, NDK 21.3.6528147, ABIs `armeabi-v7a` + `arm64-v8a`.
+- `targetSdk` is intentionally pinned to 28 with `//noinspection ExpiredTargetSdkVersion` in `build.common.gradle`. Do not "fix" it — it is a deliberate FTC SDK requirement.
+- `versionCode` and `versionName` are scraped at configure time from `FtcRobotController/src/main/AndroidManifest.xml` by a regex in `build.common.gradle`. Bump version fields there, not in TeamCode.
+- FTC SDK pinned to `org.firstinspires.ftc:* @ 11.1.0` across RobotCore, Hardware, FtcCommon, Vision, Inspection, Blocks, OnBotJava, RobotServer.
+- Pedro Pathing pinned to `com.pedropathing:ftc:2.0.4` + `com.pedropathing:telemetry:1.0.0`. The Pedro 1.x → 2.x API shift matters when reading older code or external examples.
+- `@Configurable` runtime tuning surface comes from Panels: `com.bylazar:fullpanels:1.0.12`.
+- Non-default Maven sources: `https://maven.brott.dev/` (Road Runner) and `https://mymaven.bylazar.com/releases` (Pedro + Panels). Both are required for a clean build.
+- TeamCode-only Java deps worth noticing while reading utilities/persistence code: `commons-math3:3.6.1`, `jackson-databind:2.13.4.2`.
+
 ## Validation Guidance
 
 - Useful local commands:
-  - `.\gradlew.bat :TeamCode:assembleDebug`
+  - `.\gradlew.bat :TeamCode:assembleDebug` — TeamCode debug APK only
+  - `.\gradlew.bat assembleDebug` — both modules
   - `.\gradlew.bat lint`
+  - `.\gradlew.bat clean`
+- There is no JUnit or instrumentation test suite. `gradlew test` is effectively a no-op; do not invent test commands.
 - A compile is necessary but not sufficient for robot-facing changes.
 - For subsystem or opmode edits, call out what still needs driver-station or on-robot validation.
+
+## Cross-Tool Notes
+
+- A Codex-side skill at `.codex/skills/review-recent-commits/SKILL.md` encodes the same opmode-first reading order this file teaches. Useful as a cross-reference, but `AGENTS.md` remains the canonical agent guide.
 
 ## Keeping This File Current
 
