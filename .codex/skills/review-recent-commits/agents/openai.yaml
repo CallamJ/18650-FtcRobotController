@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Recent Commits"
+  short_description: "Review recent commits and doc drift"
+  default_prompt: "Use $review-recent-commits to review recent commits in this FTC repo for regressions, code-quality issues, and AGENTS.md drift."
