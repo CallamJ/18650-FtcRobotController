@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 public class SmartColorSensor extends Device implements NormalizedColorSensor, Caching, ScoringColorSensor, WrappedDevice<NormalizedColorSensor> {
     private final NormalizedColorSensor colorSensor;
     private final HardwareCache<NormalizedRGBA> colorCache;
+    private final HardwareCache<HsvReading> hsvCache;
+    private final HardwareCache<Double> distanceCacheMm;
     private final ColorMatchConfig.ColorMatchProfile colorProfile;
     private DataFilter hueFilter = DataFilter.NONE;
     private DataFilter saturationFilter = DataFilter.NONE;
@@ -36,6 +38,10 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         this.colorSensor = colorSensor;
         this.colorProfile = colorProfile == null ? ColorMatchConfig.frontProfile() : colorProfile;
         this.colorCache = new HardwareCache<>(colorSensor::getNormalizedColors);
+        this.hsvCache = new HardwareCache<>(this::computeCachedHsvReading);
+        this.distanceCacheMm = colorSensor instanceof DistanceSensor
+                ? new HardwareCache<>(() -> ((DistanceSensor) colorSensor).getDistance(DistanceUnit.MM))
+                : null;
         syncConfiguredGain();
     }
 
@@ -51,12 +57,8 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
     public float[] getHSV() {
         syncConfiguredGain();
         syncConfiguredFilters();
-        float[] hsv = new float[3];
-        Color.colorToHSV(getNormalizedColors().toColor(), hsv);
-        hsv[0] = normalizeHue((float) hueFilter.compute(hsv[0]));
-        hsv[1] = clamp01((float) saturationFilter.compute(hsv[1]));
-        hsv[2] = clamp01((float) valueFilter.compute(hsv[2]));
-        return hsv;
+        HsvReading hsv = hsvCache.read();
+        return new float[]{hsv.hue, hsv.saturation, hsv.value};
     }
 
     public void setHsvFilters(DataFilter hueFilter, DataFilter saturationFilter, DataFilter valueFilter) {
@@ -66,6 +68,7 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         this.appliedHueFilterWindow = Integer.MIN_VALUE;
         this.appliedSaturationFilterWindow = Integer.MIN_VALUE;
         this.appliedValueFilterWindow = Integer.MIN_VALUE;
+        hsvCache.invalidateCache();
     }
 
     public void setHsvRollingAverageWindow(int window) {
@@ -86,8 +89,8 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
      * @throws IllegalStateException if this color sensor does not support distance sensing. You can check this programmatically by calling hasDistanceSensing().
      */
     public double getDistance(DistanceUnit distanceUnit){
-        if (colorSensor instanceof DistanceSensor) {
-            return ((DistanceSensor) colorSensor).getDistance(distanceUnit);
+        if (distanceCacheMm != null) {
+            return distanceUnit.fromUnit(DistanceUnit.MM, distanceCacheMm.read());
         }else {
             throw new IllegalStateException("Color sensor is not an instance of DistanceSensor, this color sensor likely doesn't support distance sensing.");
         }
@@ -98,7 +101,7 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
      * @return whether this color sensor supports distance sensing.
      */
     public boolean hasDistanceSensing(){
-        return colorSensor instanceof DistanceSensor;
+        return distanceCacheMm != null;
     }
 
     /**
@@ -202,6 +205,7 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
      */
     @Override
     public NormalizedRGBA getNormalizedColors() {
+        syncConfiguredGain();
         return colorCache.read();
     }
 
@@ -312,7 +316,13 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
      */
     @Override
     public void invalidateCache() {
+        syncConfiguredGain();
+        syncConfiguredFilters();
         colorCache.invalidateCache();
+        hsvCache.invalidateCache();
+        if (distanceCacheMm != null) {
+            distanceCacheMm.invalidateCache();
+        }
     }
 
     /**
@@ -320,7 +330,13 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
      */
     @Override
     public void updateCache() {
+        syncConfiguredGain();
+        syncConfiguredFilters();
         colorCache.updateCache();
+        hsvCache.updateCache();
+        if (distanceCacheMm != null) {
+            distanceCacheMm.updateCache();
+        }
     }
 
     /**
@@ -329,6 +345,10 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
     @Override
     public void setStrategy(Strategy strategy) {
         colorCache.setStrategy(strategy);
+        hsvCache.setStrategy(strategy);
+        if (distanceCacheMm != null) {
+            distanceCacheMm.setStrategy(strategy);
+        }
     }
 
     /**
@@ -363,6 +383,28 @@ public class SmartColorSensor extends Device implements NormalizedColorSensor, C
         public String toString() {
             return String.format("Color: %s, HSV: (%.1f, %.2f, %.2f), Confidence: %.2f",
                     detectedColor, hue, saturation, value, confidence);
+        }
+    }
+
+    private HsvReading computeCachedHsvReading() {
+        float[] hsv = new float[3];
+        Color.colorToHSV(colorCache.read().toColor(), hsv);
+        return new HsvReading(
+                normalizeHue((float) hueFilter.compute(hsv[0])),
+                clamp01((float) saturationFilter.compute(hsv[1])),
+                clamp01((float) valueFilter.compute(hsv[2]))
+        );
+    }
+
+    private static final class HsvReading {
+        private final float hue;
+        private final float saturation;
+        private final float value;
+
+        private HsvReading(float hue, float saturation, float value) {
+            this.hue = hue;
+            this.saturation = saturation;
+            this.value = value;
         }
     }
 }

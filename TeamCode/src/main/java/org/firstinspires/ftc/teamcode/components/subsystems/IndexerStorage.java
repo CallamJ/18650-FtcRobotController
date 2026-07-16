@@ -67,8 +67,9 @@ public class IndexerStorage {
     }
 
     public String getFrontClosestColorMatch() {
-        double greenDist = Math.abs(getFrontSensorHue() - LiveMatchTuning.greenHue);
-        double purpleDist = Math.abs(getFrontSensorHue() - LiveMatchTuning.purpleHue);
+        double frontHue = getFrontSensorHue();
+        double greenDist = Math.abs(frontHue - LiveMatchTuning.greenHue);
+        double purpleDist = Math.abs(frontHue - LiveMatchTuning.purpleHue);
 
         if (greenDist < purpleDist) {
             return "ARTIFACT_GREEN";
